@@ -3,7 +3,7 @@ var game = (function() {
 		remoteId: -1,
 		xSpeed: 0,
 		ySpeed: 0,
-		timeStamp:Date.now()
+		timeStamp: Date.now()
 	};
 	var oldKeyBoardMovement = {
 		xSpeed: 0,
@@ -51,10 +51,16 @@ var game = (function() {
 			}
 		});
 		commands.onExecute(tanks.execute);
-		animationLoop.every(0,commands.process);
-		animationLoop.every(0,draw.clearCanvas);
-		animationLoop.every(0,tanks.move);
-		animationLoop.every(0,drawEntity);
+
+		animationLoop.every(0, function() {
+			tanks.forEach(function(tank, index, tankList) {
+				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x, "y", tank.y]);
+			});
+		});
+		animationLoop.every(0, commands.process);
+		animationLoop.every(0, draw.clearCanvas);
+		animationLoop.every(0, tanks.move);
+		animationLoop.every(0, drawEntity);
 		animationLoop.startLoop();
 	});
 

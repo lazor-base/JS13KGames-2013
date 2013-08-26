@@ -9,16 +9,16 @@ var commands = (function() {
 		}
 	}
 
-	function process() {
+	function process(deltaTime) {
 		forEach(function(command, index, commandList) {
-			execute(command);
+			execute(command, false, deltaTime);
 		});
 	}
 
-	function execute(command, notYetPushed) {
+	function execute(command, notYetPushed, deltaTime) {
 		if (Date.now() >= command.timeStamp) {
 			for (var i = 0; i < executeListeners.length; i++) {
-				executeListeners[i](command);
+				executeListeners[i](command, deltaTime);
 			}
 			if (!notYetPushed) {
 				history.push(helper.removeFromArray(commandList, command));

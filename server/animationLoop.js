@@ -2,13 +2,17 @@ var animationLoop = (function(window) {
 	var animationLoop = null;
 	var stop = false;
 	var currentTick = 0;
+	var lastTick = 0;
 	var listenerIds = [];
 	var tickListeners = [];
+	var frameStart = 0;
+	var frameEnd = 0;
 
 	function every(numberOfTicks, callback) {
 		function Listener(numberOfTicks, callback) {
 			this.numberOfTicks = numberOfTicks;
 			this.listeners = [callback];
+			this.deltaTime = 0;
 			this.lastTick = window.performance.now();
 			return this;
 		}
@@ -22,6 +26,7 @@ var animationLoop = (function(window) {
 	}
 
 	function startLoop() {
+		lastTick = currentTick;
 		currentTick = window.performance.now();
 		for (var i = 0; i < tickListeners.length; i++) {
 			var thisListener = tickListeners[i];
@@ -29,12 +34,13 @@ var animationLoop = (function(window) {
 				return true;
 			}
 			if (currentTick - thisListener.lastTick >= thisListener.numberOfTicks) {
+				thisListener.deltaTime = currentTick - thisListener.lastTick;
 				thisListener.lastTick = currentTick;
 				for (var e = 0; e < thisListener.listeners.length; e++) {
 					if (stop) {
 						return true;
 					}
-					thisListener.listeners[e]();
+					thisListener.listeners[e](thisListener.deltaTime);
 				}
 			}
 		}
@@ -58,6 +64,9 @@ var animationLoop = (function(window) {
 	}
 
 	return {
+		get timeSinceLastFrame() {
+			return currentTick-lastTick;
+		},
 		startLoop: startLoop,
 		stopLoop: stopLoop,
 		every: every,

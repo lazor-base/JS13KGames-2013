@@ -8,9 +8,9 @@ var app = require('http').createServer(handler);
 var io = require('socket.io').listen(app);
 var fs = require('fs');
 var helper = global.helper = require("./helper.js");
-var commands = require("./commands.js");
-var animationLoop = require("./animationLoop.js");
-var tanks = require("./tanks.js");
+var commands = global.commands = require("./commands.js");
+var animationLoop = global.animationLoop = require("./animationLoop.js");
+var tanks = global.tanks = require("./tanks.js");
 
 var mimeTypes = {
 	"html": "text/html",
