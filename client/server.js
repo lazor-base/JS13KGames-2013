@@ -1,8 +1,8 @@
 var server = (function(document) {
 	var socket;
 	var fns = [];
-	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/helper.js", "/tanks.js"];
-	var scriptIds = ["server", "animationLoop", "helper", "tanks"]
+	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/helper.js", "/tanks.js", "/commands.js"];
+	var scriptIds = ["server", "animationLoop", "helper", "tanks", "commands"]
 	var ready = 0;
 	var serverReady = false;
 	var serverElement;
@@ -41,17 +41,18 @@ var server = (function(document) {
 			location.reload(); // fast way to clear everything if the server disconnects
 		});
 		socket.on("gamePlayers", function(playerList, timeStamp) {
-			socket.emit("pong",timeStamp);
+			socket.emit("pong", timeStamp);
 			console.log("Adding", playerList.length, "players")
 			tanks.add(playerList, function(tank) {
 				ui.addRemotePlayer(tank.remoteId, tank.ping);
 			});
 		});
-		socket.on("updatePlayer", function(player, timeStamp) {
-			socket.emit("pong",timeStamp);
-			tanks.replace(player);
+		socket.on("newCommand", function(command, timeStamp) {
+			socket.emit("pong", timeStamp);
+			ui.changePlayer(ui.getRemotePlayer(command.remoteId), "ping", command.ping);
+			commands.push(command)
 		});
-		socket.on("pong",changePing);
+		socket.on("pong", changePing);
 		// remove below
 		socket.on("ping", function(time) {
 			socket.emit("pong", time);
@@ -62,7 +63,7 @@ var server = (function(document) {
 		});
 		// remove above
 		socket.on('disconnects', function(playerList, timeStamp) {
-			socket.emit("pong",timeStamp);
+			socket.emit("pong", timeStamp);
 			console.log("Removing", playerList.length, "players")
 			tanks.remove(playerList);
 		});
@@ -71,7 +72,7 @@ var server = (function(document) {
 	}
 
 	function changePing(timeStamp) {
-		var ping = Date.now()-timeStamp;
+		var ping = Date.now() - timeStamp;
 		connection.forEach(function(player, index, activePlayers) {
 			player.ping = ping;
 			ui.changePlayer(ui.getRemotePlayer(player.remoteId), "ping", ping);
@@ -113,10 +114,10 @@ var server = (function(document) {
 		};
 		socket.emit("addUser", data, Date.now());
 		socket.on("userAdded", function(data, timeStamp) { // this is the one function that doesnt require a pong to know current ping.
-			socket.emit("pong",timeStamp);
+			socket.emit("pong", timeStamp);
 			var player = connection.findPlayerByLocalId(data.localId);
 			player.remoteId = data.remoteId;
-			player.ping = Date.now()-timeStamp;
+			player.ping = Date.now() - timeStamp;
 			ui.changePlayer(ui.getLocalPlayer(player.localId), ["remoteId", data.remoteId, "ping", player.ping]);
 		});
 	}

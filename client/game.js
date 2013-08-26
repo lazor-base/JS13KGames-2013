@@ -2,7 +2,8 @@ var game = (function() {
 	var keyBoardMovement = {
 		remoteId: -1,
 		xSpeed: 0,
-		ySpeed: 0
+		ySpeed: 0,
+		timeStamp:Date.now()
 	};
 	var oldKeyBoardMovement = {
 		xSpeed: 0,
@@ -35,23 +36,25 @@ var game = (function() {
 		});
 
 		input.onKeyRelease(function(event) {
-			if (contains(keyCodes, event.keyCode)) {
-				removeFromArray(moveMent, codeName(event.keyCode));
+			if (helper.contains(keyCodes, event.keyCode)) {
+				helper.removeFromArray(moveMent, codeName(event.keyCode));
 				handleChange();
 			}
 		});
 		input.onKeyPress(function(event) {
-			if (contains(keyCodes, event.keyCode)) {
+			if (helper.contains(keyCodes, event.keyCode)) {
 				var code = codeName(event.keyCode);
-				if (!contains(moveMent, code)) {
+				if (!helper.contains(moveMent, code)) {
 					moveMent.push(code);
 					handleChange();
 				}
 			}
 		});
-		animationLoop.addToLoop(draw.clearCanvas);
-		animationLoop.addToLoop(tanks.move);
-		animationLoop.addToLoop(drawEntity);
+		commands.onExecute(tanks.execute);
+		animationLoop.every(0,commands.process);
+		animationLoop.every(0,draw.clearCanvas);
+		animationLoop.every(0,tanks.move);
+		animationLoop.every(0,drawEntity);
 		animationLoop.startLoop();
 	});
 
@@ -83,11 +86,11 @@ var game = (function() {
 		keyBoardMovement.xSpeed = 0;
 		for (var i = 0; i < moveMent.length; i++) {
 			var code = moveMent[i];
-			if (contains(vertical, code) && !y) {
+			if (helper.contains(vertical, code) && !y) {
 				y = true;
 				keyBoardMovement.ySpeed = values[code];
 			}
-			if (contains(horizontal, code) && !x) {
+			if (helper.contains(horizontal, code) && !x) {
 				x = true;
 				keyBoardMovement.xSpeed = values[code];
 			}
@@ -95,6 +98,7 @@ var game = (function() {
 		if (connection.connectedToServer && isDifferent(oldKeyBoardMovement, keyBoardMovement)) {
 			var player = connection.findPlayerByLocalId(0);
 			keyBoardMovement.remoteId = player.remoteId;
+			keyBoardMovement.timeStamp = Date.now();
 			server.input(keyBoardMovement);
 		}
 	}

@@ -1,24 +1,47 @@
 var animationLoop = (function(window) {
 	var animationLoop = null;
 	var stop = false;
-	var numberOfTicks = 50;
 	var currentTick = 0;
-	var lastTick = window.performance.now();
-	var functions = [];
+	var listenerIds = [];
+	var tickListeners = [];
+
+	function every(numberOfTicks, callback) {
+		function Listener(numberOfTicks, callback) {
+			this.numberOfTicks = numberOfTicks;
+			this.listeners = [callback];
+			this.lastTick = window.performance.now();
+			return this;
+		}
+		var index = listenerIds.indexOf(numberOfTicks);
+		if (index > -1) {
+			tickListeners[index].listeners.push(callback);
+		} else {
+			tickListeners.push(new Listener(numberOfTicks, callback));
+			listenerIds.push(numberOfTicks);
+		}
+	}
 
 	function startLoop() {
 		currentTick = window.performance.now();
-		if (currentTick - lastTick >= numberOfTicks) {
-			lastTick = currentTick;
-			for (var i = 0; i < functions.length; i++) {
-				if (stop === false) {
-					functions[i]();
+		for (var i = 0; i < tickListeners.length; i++) {
+			var thisListener = tickListeners[i];
+			if (stop) {
+				return true;
+			}
+			if (currentTick - thisListener.lastTick >= thisListener.numberOfTicks) {
+				thisListener.lastTick = currentTick;
+				for (var e = 0; e < thisListener.listeners.length; e++) {
+					if (stop) {
+						return true;
+					}
+					thisListener.listeners[e]();
 				}
 			}
 		}
-		if (stop === false) {
-			animationLoop = window.requestAnimationFrame(startLoop);
+		if (stop) {
+			return true;
 		}
+		animationLoop = window.requestAnimationFrame(startLoop);
 	}
 
 	function stopLoop() {
@@ -34,14 +57,10 @@ var animationLoop = (function(window) {
 		functions.splice(id, 1);
 	}
 
-	function setSpeed(speed) {
-		numberOfTicks = speed;
-	}
 	return {
-		setSpeed: setSpeed,
 		startLoop: startLoop,
 		stopLoop: stopLoop,
-		addToLoop: addToLoop,
+		every: every,
 		removeFromLoop: removeFromLoop
 	};
 }(window));

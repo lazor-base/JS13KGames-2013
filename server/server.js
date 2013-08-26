@@ -1,18 +1,17 @@
+process.on("uncaughtException", function(err) {
+	console.error(err.message, err.stack);
+});
+
 var url = require('url');
 var path = require('path');
 var app = require('http').createServer(handler);
 var io = require('socket.io').listen(app);
 var fs = require('fs');
+var helper = global.helper = require("./helper.js");
+var commands = require("./commands.js");
 var animationLoop = require("./animationLoop.js");
 var tanks = require("./tanks.js");
-var helper = require("./helper.js");
-global.contains = helper.contains;
-global.removeFromArray = helper.removeFromArray;
-global.removeFromArrayAtIndex = helper.removeFromArrayAtIndex;
-global.randomFromInterval = helper.randomFromInterval;
-process.on("uncaughtException", function(err) {
-	console.error(err.message, err.stack);
-});
+
 var mimeTypes = {
 	"html": "text/html",
 	"jpeg": "image/jpeg",
@@ -60,17 +59,13 @@ io.sockets.on('connection', function(socket) {
 	socket.set("socketId", socket.id);
 	socket.set("clientList", []);
 	socket.set("players", 0);
-	// remove below
-	socket.emit("ping", Date.now());
-	socket.on("pong", function(time) {
-		socket.set("ping", Date.now() - time);
-	});
-	// remove above
+
 	if (tanks.length) {
 		// send all player data to this new player
 		socket.emit("gamePlayers", tanks.tankList, Date.now());
 	}
 	socket.on("pong", function(timeStamp) {
+		socket.set("ping", Date.now() - timeStamp);
 		tanks.forEach(function(tank, index, tankList) {
 			if (tank.socketId === socket.id) {
 				tank.ping = Date.now() - timeStamp;
@@ -105,14 +100,12 @@ io.sockets.on('connection', function(socket) {
 			});
 		});
 	});
-	socket.on("input", function(moveMentData, timeStamp) {
+	socket.on("input", function(command, timeStamp) {
 		socket.emit("pong", timeStamp);
-		var player = tanks.getTankById(moveMentData.remoteId);
-		player.xSpeed = moveMentData.xSpeed;
-		player.ySpeed = moveMentData.ySpeed;
 		socket.get("ping", function(err, ping) {
-			player.ping = ping;
-			io.sockets.emit("updatePlayer", player, Date.now());
+			command.ping = ping;
+			io.sockets.emit("newCommand", command, Date.now());
+			commands.push(command);
 		});
 	});
 	socket.on("disconnect", function() {
@@ -125,7 +118,7 @@ function removePlayerById(playerIds, socket) {
 	tanks.remove(playerIds, function(remoteId) {
 		socket.get("clientList", function(err, idList) {
 			if (idList && idList.length) {
-				global.removeFromArray(idList, remoteId);
+				helper.removeFromArray(idList, remoteId);
 				socket.set("clientList", idList);
 			}
 		});
@@ -139,18 +132,12 @@ function onPlayerDisconnect(socket) {
 		console.log(playerIds)
 		removePlayerById(playerIds, socket);
 		socket.get("socketId", function(err, index) {
-			global.removeFromArrayAtIndex(sockets, index);
+			helper.removeFromArrayAtIndex(sockets, index);
 		});
 	});
 }
 
-// remove below
-
-function ping() {
-	io.sockets.emit("ping", Date.now());
-}
-// remove above
-
-animationLoop.setSpeed(50);
-animationLoop.addToLoop(tanks.move);
+commands.onExecute(tanks.execute);
+animationLoop.every(0,commands.process);
+animationLoop.every(0, tanks.move);
 animationLoop.startLoop();

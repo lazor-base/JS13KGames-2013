@@ -11,22 +11,20 @@ var tanks = (function() {
 		}
 	}
 
-	function replace(tank) {
-		for (var i = 0; i < tankList.length; i++) {
-			if (tankList[i].remoteId === tank.remoteId) {
-				tankList[i] = tank;
-				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), "ping", tank.ping);
-			}
-		}
+	function execute(command) {
+		var tank = getTankById(command.remoteId);
+		tank.xSpeed = command.xSpeed;
+		tank.ySpeed = command.ySpeed;
+		tank.ping = command.ping;
 	}
 
 	function create(remoteId, socketId, ping) {
 		if (usedPlayers.length > 0) {
-			var recycledPlayer = removeFromArrayAtIndex(usedPlayers);
+			var recycledPlayer = helper.removeFromArrayAtIndex(usedPlayers);
 			recycledPlayer.remoteId = remoteId;
 			recycledPlayer.socketId = socketId;
-			recycledPlayer.x = randomFromInterval(0, 300);
-			recycledPlayer.y = randomFromInterval(0, 300);
+			recycledPlayer.x = helper.randomFromInterval(0, 300);
+			recycledPlayer.y = helper.randomFromInterval(0, 300);
 			recycledPlayer.health = 1;
 			recycledPlayer.angle = 0;
 			recycledPlayer.xSpeed = 0;
@@ -37,8 +35,8 @@ var tanks = (function() {
 			return {
 				remoteId: remoteId,
 				socketId: socketId,
-				x: randomFromInterval(0, 300),
-				y: randomFromInterval(0, 300),
+				x: helper.randomFromInterval(0, 300),
+				y: helper.randomFromInterval(0, 300),
 				health: 1,
 				angle: 0,
 				ySpeed: 0,
@@ -51,11 +49,11 @@ var tanks = (function() {
 	function remove(playerIds, callback) {
 		var lastIndex = 0;
 		while (playerIds.length && lastIndex < tankList.length) {
-			if (contains(playerIds, tankList[lastIndex].remoteId)) {
+			if (helper.contains(playerIds, tankList[lastIndex].remoteId)) {
 				var remoteId = tankList[lastIndex].remoteId;
 				console.log("destroying player", tankList[lastIndex].remoteId);
-				usedPlayers.push(removeFromArrayAtIndex(tankList, lastIndex));
-				removeFromArray(playerIds, remoteId);
+				usedPlayers.push(helper.removeFromArrayAtIndex(tankList, lastIndex));
+				helper.removeFromArray(playerIds, remoteId);
 				if (typeof callback === "function") {
 					callback(remoteId);
 				}
@@ -104,7 +102,7 @@ var tanks = (function() {
 		create: create,
 		move: move,
 		getTankById: getTankById,
-		replace: replace,
+		execute: execute,
 		forEach: forEach,
 		remove: remove
 	};

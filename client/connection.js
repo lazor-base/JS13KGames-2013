@@ -11,7 +11,7 @@ var connection = (function() {
 
 	function compare(a, b) {
 		return a.filter(function(i) {
-			return !contains(b, i);
+			return !helper.contains(b, i);
 		});
 	}
 
@@ -52,7 +52,7 @@ var connection = (function() {
 		if (gamePadId === -1) {
 			return true;
 		}
-		return contains(usedGamePads, gamePadId);
+		return helper.contains(usedGamePads, gamePadId);
 	}
 
 	function disconnectPlayer(gamePadId) {
@@ -63,7 +63,7 @@ var connection = (function() {
 		ui.remove(ui.getLocalPlayer(findPlayerByGamePadId(gamePadId)));
 		recyclePlayer(gamePadId);
 		if (gamePadInUse(gamePadId)) {
-			removeFromArray(usedGamePads, gamePadId); // remove the gamepad id from used gamepads
+			helper.removeFromArray(usedGamePads, gamePadId); // remove the gamepad id from used gamepads
 		}
 	}
 
@@ -97,7 +97,7 @@ var connection = (function() {
 		} else {
 			// reset back to keyboard
 			if (gamePadInUse(activePlayers[0].gamePadId)) {
-				removeFromArray(usedGamePads, activePlayers[0].gamePadId); // remove the gamepad id from used gamepads
+				helper.removeFromArray(usedGamePads, activePlayers[0].gamePadId); // remove the gamepad id from used gamepads
 			}
 			activePlayers[0].gamePadId = -1;
 			connection.playerOneUsingGamepad = false;
@@ -150,7 +150,7 @@ var connection = (function() {
 	function Player(gamePadId) {
 		var player;
 		if (usedPlayers.length) {
-			player = removeFromArray(usedPlayers); // get a used player and init them.
+			player = helper.removeFromArray(usedPlayers); // get a used player and init them.
 		} else {
 			player = {};
 		}
@@ -168,7 +168,7 @@ var connection = (function() {
 	function recyclePlayer(gamePadId) {
 		for (var i = 0; i < activePlayers.length; i++) {
 			if (activePlayers[i].gamePadId === gamePadId) {
-				usedPlayers.push(removeFromArrayAtIndex(activePlayers, i));
+				usedPlayers.push(helper.removeFromArrayAtIndex(activePlayers, i));
 				return true;
 			}
 		}
@@ -189,7 +189,6 @@ var connection = (function() {
 	function joinServer() {
 		connectedToServer = true;
 		for (var i = 0; i < activePlayers.length; i++) {
-			console.log("adding player", activePlayers[i])
 			server.addPlayer(activePlayers[i].localId);
 		}
 	}
