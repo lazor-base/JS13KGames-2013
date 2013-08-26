@@ -6,7 +6,8 @@ var draw = (function(window, document) {
 		context = canvas.getContext("2d");
 	});
 
-	function dot(x, y, home) {
+	function dot(tank, home) {
+		context.save();
 		if (home) {
 			context.strokeStyle = "red";
 			context.fillStyle = "red";
@@ -14,7 +15,11 @@ var draw = (function(window, document) {
 			context.strokeStyle = "black";
 			context.fillStyle = "black";
 		}
-		context.fillRect(x - 1, y - 1, 3, 3);
+		context.translate(tank.x, tank.y);
+		context.rotate(tank.angle * Math.PI / 180);
+		context.fillRect(tank.x - 5, tank.y - 10, 10, 20);
+		context.translate(-tank.x, -tank.y);
+		context.restore();
 	}
 
 	function clearCanvas() {

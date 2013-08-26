@@ -104,8 +104,8 @@ var game = (function() {
 	}
 
 	function drawTanks(tank, index, tankList) {
-		var home = connection.remotePlayerIsLocal(tank.id);
-		draw.dot(tank.x, tank.y, home);
+		var home = connection.remotePlayerIsLocal(tank.remoteId);
+		draw.dot(tank, home);
 	}
 
 	function drawEntity() {

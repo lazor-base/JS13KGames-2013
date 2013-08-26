@@ -56,15 +56,7 @@ var server = (function(document) {
 			tanks.replace(tank)
 		});
 		socket.on("pong", changePing);
-		// remove below
-		socket.on("ping", function(time) {
-			socket.emit("pong", time);
-		});
-		socket.on("ready", function() {
-			if (!serverReady) {}
-			serverReady = true;
-		});
-		// remove above
+
 		socket.on('disconnects', function(playerList, timeStamp) {
 			socket.emit("pong", timeStamp);
 			console.log("Removing", playerList.length, "players")
