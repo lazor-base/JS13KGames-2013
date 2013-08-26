@@ -104,7 +104,9 @@ io.sockets.on('connection', function(socket) {
 		socket.emit("pong", timeStamp);
 		socket.get("ping", function(err, ping) {
 			command.ping = ping;
+			command.timeStamp += 50
 			io.sockets.emit("newCommand", command, Date.now());
+			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);
 		});
 	});
@@ -138,6 +140,6 @@ function onPlayerDisconnect(socket) {
 }
 
 commands.onExecute(tanks.execute);
-animationLoop.every(0,commands.process);
+animationLoop.every(0, commands.process);
 animationLoop.every(0, tanks.move);
 animationLoop.startLoop();

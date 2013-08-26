@@ -11,6 +11,14 @@ var tanks = (function() {
 		}
 	}
 
+	function replace(newTank) {
+		forEach(function(tank,index,tankList) {
+			if(tank.remoteId === newTank.remoteId) {
+				tankList[index] = newTank;
+			}
+		})
+	}
+
 	function execute(command) {
 		var tank = getTankById(command.remoteId);
 		tank.xSpeed = command.xSpeed;
@@ -103,6 +111,7 @@ var tanks = (function() {
 		move: move,
 		getTankById: getTankById,
 		execute: execute,
+		replace:replace,
 		forEach: forEach,
 		remove: remove
 	};

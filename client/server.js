@@ -51,6 +51,9 @@ var server = (function(document) {
 			socket.emit("pong", timeStamp);
 			ui.changePlayer(ui.getRemotePlayer(command.remoteId), "ping", command.ping);
 			commands.push(command)
+		});socket.on("replaceTank", function(tank, timeStamp) {
+			socket.emit("pong", timeStamp);
+			tanks.replace(tank)
 		});
 		socket.on("pong", changePing);
 		// remove below
