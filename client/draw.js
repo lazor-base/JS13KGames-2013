@@ -17,8 +17,10 @@ var draw = (function(window, document) {
 		}
 		context.translate(tank.x, tank.y);
 		context.rotate(tank.angle * Math.PI / 180);
-		context.fillRect(tank.x - 5, tank.y - 10, 10, 20);
+		context.fillRect(-10, -5, 20, 10);
+		context.rotate(-tank.angle * Math.PI / 180);
 		context.translate(-tank.x, -tank.y);
+		// context.translate((tank.x + canvas.width / 2)*-1, (tank.y + canvas.height / 2) * -1);
 		context.restore();
 	}
 

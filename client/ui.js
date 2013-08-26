@@ -1,5 +1,5 @@
 var ui = (function(window, document) {
-	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span></li>';
+	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span> | X: <span class="x">{{x}}</span> | Y: <span class="y">{{y}}</span></li>';
 
 	function createElement(name) {
 		return document.createElement(name);
@@ -59,6 +59,8 @@ var ui = (function(window, document) {
 				localId: localId,
 				controllerId: controllerId,
 				remoteId: remoteId,
+				x: 0,
+				y: 0,
 				ping: ping
 			});
 			var parent = get(target);

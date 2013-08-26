@@ -51,9 +51,11 @@ var server = (function(document) {
 			socket.emit("pong", timeStamp);
 			ui.changePlayer(ui.getRemotePlayer(command.remoteId), "ping", command.ping);
 			commands.push(command)
-		});socket.on("replaceTank", function(tank, timeStamp) {
+		});
+		socket.on("replaceTank", function(tank, timeStamp) {
 			socket.emit("pong", timeStamp);
-			tanks.replace(tank)
+			ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x,"y", tank.y]);
+			// tanks.replace(tank)
 		});
 		socket.on("pong", changePing);
 
@@ -61,6 +63,9 @@ var server = (function(document) {
 			socket.emit("pong", timeStamp);
 			console.log("Removing", playerList.length, "players")
 			tanks.remove(playerList);
+			for (var i = 0; i < playerList.length; i++) {
+				ui.remove(ui.getRemotePlayer(playerList[i]));
+			}
 		});
 		connection.joinServer();
 		getReady();
