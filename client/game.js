@@ -3,7 +3,7 @@ var game = (function() {
 		remoteId: -1,
 		xSpeed: 0,
 		ySpeed: 0,
-		timeStamp: Date.now()
+		timeStamp: time.now()
 	};
 	var oldKeyBoardMovement = {
 		xSpeed: 0,
@@ -104,7 +104,7 @@ var game = (function() {
 		if (connection.connectedToServer && isDifferent(oldKeyBoardMovement, keyBoardMovement)) {
 			var player = connection.findPlayerByLocalId(0);
 			keyBoardMovement.remoteId = player.remoteId;
-			keyBoardMovement.timeStamp = Date.now();
+			keyBoardMovement.timeStamp = time.now();
 			server.input(keyBoardMovement);
 		}
 	}

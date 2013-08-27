@@ -37,6 +37,16 @@ var server = (function(document) {
 	function serverLoad() {
 		ui.setAttribute(serverElement, "style", "border:1px solid green;background:rgba(0,255,0,0.1)");
 		socket = io.connect(serverElement.value);
+		var clientTimestamp = (new Date()).valueOf();
+		socket.emit("getServerTime", clientTimestamp);
+		socket.on("sendServerTime", function(data) {
+			var nowTimeStamp = (new Date()).valueOf();
+			var serverClientRequestDiffTime = data.diff;
+			var serverTimestamp = data.serverTimestamp;
+			var serverClientResponseDiffTime = nowTimeStamp - serverTimestamp;
+			var responseTime = (serverClientRequestDiffTime - nowTimeStamp + clientTimestamp - serverClientResponseDiffTime) / 2;
+			var syncedServerTime = new Date((new Date()).valueOf() + (serverClientResponseDiffTime - responseTime));
+		});
 		socket.on('disconnect', function() {
 			location.reload(); // fast way to clear everything if the server disconnects
 		});
@@ -54,7 +64,7 @@ var server = (function(document) {
 		});
 		socket.on("replaceTank", function(tank, timeStamp) {
 			socket.emit("pong", timeStamp);
-			ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x,"y", tank.y]);
+			ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x, "y", tank.y]);
 			tanks.replace(tank)
 		});
 		socket.on("pong", changePing);
@@ -71,8 +81,15 @@ var server = (function(document) {
 		getReady();
 	}
 
-	function changePing(timeStamp) {
-		var ping = Date.now() - timeStamp;
+	function changePing(localTime, difference, serverTime) {
+		console.log
+		var nowTimeStamp = (new Date()).valueOf();
+		var serverClientResponseDiffTime = nowTimeStamp - serverTime;
+		var responseTime = (difference - nowTimeStamp + localTime - serverClientResponseDiffTime) / 2;
+
+		var syncedServerTime = new Date((new Date()).valueOf() + (serverClientResponseDiffTime - responseTime));
+		time.serverTime = new Date(syncedServerTime).valueOf();
+		var ping = responseTime;
 		connection.forEach(function(player, index, activePlayers) {
 			player.ping = ping;
 			ui.changePlayer(ui.getRemotePlayer(player.remoteId), "ping", ping);

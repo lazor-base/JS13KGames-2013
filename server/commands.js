@@ -16,7 +16,7 @@ var commands = (function() {
 	}
 
 	function execute(command, notYetPushed, deltaTime) {
-		if (Date.now() >= command.timeStamp) {
+		if (time.now() >= command.timeStamp) {
 			for (var i = 0; i < executeListeners.length; i++) {
 				executeListeners[i](command, deltaTime);
 			}
@@ -30,8 +30,11 @@ var commands = (function() {
 
 	function push(command) {
 		if (execute(command, true) === false) {
+			console.log("executing in ",command.timeStamp-time.now())
 			commandList.push(command);
+			return true;
 		}
+		console.log(command.timeStamp-time.now())
 	}
 
 	function onExecute(fn) {

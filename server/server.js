@@ -73,11 +73,11 @@ io.sockets.on('connection', function(socket) {
 		});
 	});
 	socket.on("disconnectUser", function(remoteId, timeStamp) {
-		socket.emit("pong", timeStamp);
+		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		removePlayerById([remoteId], socket)
 	});
 	socket.on("addUser", function(data, timeStamp) { // adding a user from an already connected local machine.
-		socket.emit("pong", timeStamp);
+		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		console.log("adduser");
 		var remoteId = minId;
 		minId = minId + 1; // make sure the relevant number of ids are reserved.
@@ -101,10 +101,10 @@ io.sockets.on('connection', function(socket) {
 		});
 	});
 	socket.on("input", function(command, timeStamp) {
-		socket.emit("pong", timeStamp);
+		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		socket.get("ping", function(err, ping) {
 			command.ping = ping;
-			command.timeStamp += 50
+			command.timeStamp = Date.now() + 100;
 			io.sockets.emit("newCommand", command, Date.now());
 			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);
@@ -138,6 +138,12 @@ function onPlayerDisconnect(socket) {
 		});
 	});
 }
+
+var time = global.time = {
+	now: function() {
+		return Date.now()
+	}
+};
 
 commands.onExecute(tanks.execute);
 animationLoop.every(0, commands.process);

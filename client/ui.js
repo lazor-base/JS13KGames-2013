@@ -73,7 +73,6 @@ var ui = (function(window, document) {
 	}
 
 	function changePlayer(player, property, value) {
-
 		function handleRemoteId(property, value) {
 			if (property === "remoteId") {
 				player.dataset.remoteid = value;
