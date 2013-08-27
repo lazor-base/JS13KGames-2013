@@ -30,11 +30,9 @@ var commands = (function() {
 
 	function push(command) {
 		if (execute(command, true) === false) {
-			console.log("executing in ",command.timeStamp-time.now())
 			commandList.push(command);
 			return true;
 		}
-		console.log(command.timeStamp-time.now())
 	}
 
 	function onExecute(fn) {

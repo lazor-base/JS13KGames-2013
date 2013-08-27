@@ -77,6 +77,7 @@ io.sockets.on('connection', function(socket) {
 		removePlayerById([remoteId], socket)
 	});
 	socket.on("addUser", function(data, timeStamp) { // adding a user from an already connected local machine.
+		console.log(timeStamp, Date.now() - timeStamp, Date.now())
 		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		console.log("adduser");
 		var remoteId = minId;
@@ -104,7 +105,7 @@ io.sockets.on('connection', function(socket) {
 		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		socket.get("ping", function(err, ping) {
 			command.ping = ping;
-			command.timeStamp = Date.now() + 100;
+			command.timeStamp = Date.now() + 50;
 			io.sockets.emit("newCommand", command, Date.now());
 			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);

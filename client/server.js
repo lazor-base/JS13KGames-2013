@@ -82,17 +82,12 @@ var server = (function(document) {
 	}
 
 	function changePing(localTime, difference, serverTime) {
-		console.log
-		var nowTimeStamp = (new Date()).valueOf();
-		var serverClientResponseDiffTime = nowTimeStamp - serverTime;
-		var responseTime = (difference - nowTimeStamp + localTime - serverClientResponseDiffTime) / 2;
-
-		var syncedServerTime = new Date((new Date()).valueOf() + (serverClientResponseDiffTime - responseTime));
-		time.serverTime = new Date(syncedServerTime).valueOf();
-		var ping = responseTime;
-		connection.forEach(function(player, index, activePlayers) {
-			player.ping = ping;
-			ui.changePlayer(ui.getRemotePlayer(player.remoteId), "ping", ping);
+		time.parse(localTime, difference, serverTime, function() {
+			var ping = difference;
+			connection.forEach(function(player, index, activePlayers) {
+				player.ping = ping;
+				ui.changePlayer(ui.getRemotePlayer(player.remoteId), "ping", ping);
+			});
 		});
 	}
 
