@@ -101,11 +101,15 @@ io.sockets.on('connection', function(socket) {
 			});
 		});
 	});
-	socket.on("input", function(command, timeStamp) {
+	socket.on("input", function(action, value, remoteId, timeStamp) {
 		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		socket.get("ping", function(err, ping) {
-			command.ping = ping;
-			command.timeStamp = Date.now() + 50;
+			var command = {
+				remoteId:remoteId,
+				ping:ping,
+				timeStamp:Date.now() + 50,
+			};
+			command[action] = value;
 			io.sockets.emit("newCommand", command, Date.now());
 			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);
@@ -121,8 +125,8 @@ function removePlayerById(playerIds, socket) {
 	tanks.remove(playerIds, function(remoteId) {
 		socket.get("clientList", function(err, idList) {
 			if (idList && idList.length) {
-				helper.removeFromArray(idList, remoteId);
-				socket.set("clientList", idList);
+				// helper.removeFromArray(idList, remoteId);
+				// socket.set("clientList", idList);
 			}
 		});
 	});
@@ -132,7 +136,6 @@ function removePlayerById(playerIds, socket) {
 function onPlayerDisconnect(socket) {
 	console.log("Client Disconnected")
 	socket.get("clientList", function(err, playerIds) {
-		console.log(playerIds)
 		removePlayerById(playerIds, socket);
 		socket.get("socketId", function(err, index) {
 			helper.removeFromArrayAtIndex(sockets, index);

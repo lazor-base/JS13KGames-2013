@@ -1,6 +1,7 @@
 var gamePad = (function(window, navigator) {
 	var disabled = false;
 	var polling = false;
+	var gamepads = [];
 	var prevRawGamepadTypes = [];
 	var prevTimestamps = [];
 	var gamePadListeners = [];
@@ -32,7 +33,7 @@ var gamePad = (function(window, navigator) {
 	};
 
 	function connectedGamepads() {
-		return gamePad.gamepads.length;
+		return gamepads.length;
 	}
 
 	function startPolling() {
@@ -91,8 +92,8 @@ var gamePad = (function(window, navigator) {
 	function pollStatus() {
 		pollGamepads();
 		// the following is used to check if there has been a change to the button inputs in chrome.
-		for (var i in gamePad.gamepads) {
-			var gamepad = gamePad.gamepads[i];
+		for (var i in gamepads) {
+			var gamepad = gamepads[i];
 
 			// Don’t do anything if the current timestamp is the same as previous
 			// one, which means that the state of the gamepad hasn’t changed.
@@ -110,7 +111,7 @@ var gamePad = (function(window, navigator) {
 
 	function updateListeners(gamepadId) {
 		for (var i = 0; i < gamePadListeners.length; i++) {
-			gamePadListeners[i](gamePad.gamepads[gamepadId]);
+			gamePadListeners[i](gamepads[gamepadId]);
 		}
 	}
 
@@ -120,7 +121,7 @@ var gamePad = (function(window, navigator) {
 
 	function pollGamepads() {
 
-		// Get the array of gamePad.gamepads – the first method (function call)
+		// Get the array of gamepads – the first method (function call)
 		// is the most modern one, the second is there for compatibility with
 		// slightly older versions of Chrome, but it shouldn’t be necessary
 		// for long.
@@ -128,37 +129,37 @@ var gamePad = (function(window, navigator) {
 
 		if (rawGamepads) {
 			// We don’t want to use rawGamepads coming straight from the browser,
-			// since it can have “holes” (e.g. if you plug two gamePad.gamepads, and then
+			// since it can have “holes” (e.g. if you plug two gamepads, and then
 			// unplug the first one, the remaining one will be at index [1]).
-			gamePad.gamepads = [];
+			gamepads = [];
 
-			// We only refresh the display when we detect some gamePad.gamepads are new
+			// We only refresh the display when we detect some gamepads are new
 			// or removed; we do it by comparing raw gamepad table entries to
 			// “undefined.”
 			var gamepadsChanged = false;
 
 			for (var i = 0; i < rawGamepads.length; i++) {
 				if (typeof rawGamepads[i] !== prevRawGamepadTypes[i]) {
-					gamePad.gamepadsChanged = true;
+					gamepadsChanged = true;
 					prevRawGamepadTypes[i] = typeof rawGamepads[i];
 				}
 
 				if (rawGamepads[i]) {
-					gamePad.gamepads.push(rawGamepads[i]);
+					gamepads.push(rawGamepads[i]);
 				}
 			}
 
 			// Ask the tester to refresh the visual representations of gamePad.gamepads
 			// on the screen.
-			if (gamePad.gamepadsChanged) {
-				connection.onGamePadChange(gamePad.gamepads);
+			if (gamepadsChanged) {
+				connection.onGamePadChange(gamepads);
 			}
 		}
 	}
 
 	function onGamepadConnect(event) {
 		// Add the new gamepad on the list of gamePad.gamepads to look after.
-		gamePad.gamepads.push(event.gamepad);
+		gamepads.push(event.gamepad);
 
 		// Start the polling loop to monitor button changes.
 		startPolling();
@@ -166,9 +167,15 @@ var gamePad = (function(window, navigator) {
 
 	function onGamepadDisconnect() {}
 	return {
-		disabled: disabled,
-		polling: polling,
-		gamepads: [], // stopped working as a local variable
+		get gamepads() {
+			return gamepads;
+		},
+		get disabled() {
+			return disabled;
+		},
+		get polling() {
+			return polling;
+		},
 		prevRawGamepadTypes: prevRawGamepadTypes,
 		connectedGamepads: connectedGamepads,
 		startPolling: startPolling,

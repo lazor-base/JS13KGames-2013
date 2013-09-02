@@ -20,7 +20,17 @@ var draw = (function(window, document) {
 		context.fillRect(-10, -5, 20, 10);
 		context.rotate(-tank.angle * Math.PI / 180);
 		context.translate(-tank.x, -tank.y);
-		// context.translate((tank.x + canvas.width / 2)*-1, (tank.y + canvas.height / 2) * -1);
+		context.restore();
+		context.save();
+		context.translate(tank.x, tank.y);
+		context.rotate(tank.turretAngle * Math.PI / 180);
+		context.lineWidth = 1;
+		context.beginPath();
+		context.moveTo(0, 0);
+		context.lineTo(75, 0);
+		context.stroke();
+		context.rotate(-tank.turretAngle * Math.PI / 180);
+		context.translate(-tank.x, -tank.y);
 		context.restore();
 	}
 

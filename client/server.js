@@ -1,31 +1,34 @@
 var server = (function(document) {
 	var socket;
 	var fns = [];
-	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/helper.js", "/tanks.js", "/commands.js"];
-	var scriptIds = ["server", "animationLoop", "helper", "tanks", "commands"]
+	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/tanks.js", "/commands.js"];
+	var scriptIds = ["server", "animationLoop", "tanks", "commands"]
 	var ready = 0;
 	var serverReady = false;
+	var currentServer = null;
 	var serverElement;
 	ui.ready(function() {
 		serverElement = ui.get("server");
 	});
 
 	function connect(ip) {
-		for (var i = 0; i < scripts.length; i++) {
-			var id = scriptIds[i] + "Script";
-			var scriptElement = ui.get(id);
-			if (scriptElement) {
-				ui.remove(scriptElement);
+		if (ip !== currentServer) {
+			for (var i = 0; i < scripts.length; i++) {
+				var id = scriptIds[i] + "Script";
+				var scriptElement = ui.get(id);
+				if (scriptElement) {
+					ui.remove(scriptElement);
+				}
+				var script = ui.createElement("script");
+				if (scriptIds[i] === "server") {
+					script.onload = server.serverLoad;
+				} else {
+					script.onload = getReady;
+				}
+				script.onerror = server.serverFail;
+				ui.setAttribute(script, ["id", id, "src", "http://" + ip + scripts[i]]);
+				document.body.appendChild(script);
 			}
-			var script = ui.createElement("script");
-			if (scriptIds[i] === "server") {
-				script.onload = server.serverLoad;
-			} else {
-				script.onload = getReady;
-			}
-			script.onerror = server.serverFail;
-			ui.setAttribute(script, ["id", id, "src", "http://" + ip + scripts[i]]);
-			document.body.appendChild(script);
 		}
 	}
 
@@ -107,8 +110,8 @@ var server = (function(document) {
 		}
 	}
 
-	function input(data) {
-		socket.emit("input", data, Date.now());
+	function send(action, value, remoteId) {
+		socket.emit("input", action, value, remoteId, Date.now());
 	}
 
 	function serverFail() {
@@ -140,6 +143,6 @@ var server = (function(document) {
 		serverLoad: serverLoad,
 		serverFail: serverFail,
 		onReady: onReady,
-		input: input
+		send: send,
 	};
 }(document));

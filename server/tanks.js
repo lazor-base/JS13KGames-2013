@@ -1,4 +1,5 @@
 var tanks = (function() {
+	"use strict";
 	var usedPlayers = [];
 	var tankList = [];
 
@@ -16,22 +17,35 @@ var tanks = (function() {
 			if (tank.remoteId === newTank.remoteId) {
 				tankList[index] = newTank;
 			}
-		})
+		});
 	}
 
-	/*function execute(command) {
-		var tank = getTankById(command.remoteId);
-		tank.xSpeed = command.xSpeed;
-		tank.ySpeed = command.ySpeed;
-		tank.ping = command.ping;
-	}*/
-
-	function execute(command, deltaTime) {
+	function execute(command, deltaTime, remainder) {
 		var tank = getTankById(command.remoteId);
 		tank.ping = command.ping;
+		tank.remainder = remainder;
 		tank.deltaTime = deltaTime;
-		tank.xSource = command.xSpeed;
-		tank.ySource = command.ySpeed;
+		if (typeof command.shoot !== "undefined") {
+			// tank.turretAngle = command.shoot;
+		}
+		if (typeof command.turretLeft !== "undefined") {
+			tank.turretAccel = -Math.abs(command.turretLeft);
+		}
+		if (typeof command.turretRight !== "undefined") {
+			tank.turretAccel = Math.abs(command.turretRight);
+		}
+		if (typeof command.left !== "undefined") {
+			tank.xSource = -Math.abs(command.left);
+		}
+		if (typeof command.right !== "undefined") {
+			tank.xSource = Math.abs(command.right);
+		}
+		if (typeof command.accel !== "undefined") {
+			tank.ySource = -Math.abs(command.accel);
+		}
+		if (typeof command.decel !== "undefined") {
+			tank.ySource = Math.abs(command.decel);
+		}
 	}
 
 	function create(remoteId, socketId, ping) {
@@ -50,7 +64,10 @@ var tanks = (function() {
 			recycledPlayer.drivePower = 0;
 			recycledPlayer.turnPower = 0;
 			recycledPlayer.deltaTime = 0;
+			recycledPlayer.remainder = 0;
 			recycledPlayer.ping = ping;
+			recycledPlayer.turretAngle = 0;
+			recycledPlayer.turretAccel = 0;
 			return recycledPlayer;
 		} else {
 			return {
@@ -69,6 +86,9 @@ var tanks = (function() {
 				drivePower: 0,
 				turnPower: 0,
 				deltaTime: 0,
+				remainder: 0,
+				turretAngle: 0,
+				turretAccel: 0,
 				ping: ping
 			};
 		}
@@ -86,7 +106,7 @@ var tanks = (function() {
 					callback(remoteId);
 				}
 			} else {
-				lastIndex++
+				lastIndex++;
 			}
 		}
 	}
@@ -106,46 +126,62 @@ var tanks = (function() {
 		}
 	}
 
+	function move(deltaTime) {
+		forEach(function(tank, index, tankList) {
+			processMove(tank, deltaTime);
+		});
+	}
+
+	function length() {
+		return tankList.length;
+	}
+
 	function processMove(tank, deltaTime) {
-		"use strict";
 		// Constants, just random numbers
 		if (tank.lastTime - tank.startTime > 1000) {
 			tank.startTime = tank.lastTime;
 		}
-		var MAX_SPEED = 60 * (deltaTime / 1000); // figure out how fast we need to go to match 4 pixels per second
-		var MAX_TURN_RATE = 60 * (deltaTime / 1000);
+		var MAX_SPEED = 60 * ((deltaTime + tank.remainder) / 1000); // figure out how fast we need to go to match 4 pixels per second
+		var MAX_TURN_RATE = 60 * ((deltaTime + tank.remainder) / 1000);
+		tank.remainder = 0;
 
 		// If neither are pressed
-		if (tank.xSource == 0 && tank.ySource == 0) {
+		if (tank.xSource === 0 && tank.ySource === 0) {
 			tank.turnPower = 0;
 			tank.drivePower = 0;
 		}
 		// If up is pressed, and can still accelerate
-		if (tank.ySource < 0 && tank.xSource == 0) {
+		if (tank.ySource < 0 && tank.xSource === 0) {
 			tank.drivePower = 100;
 			tank.turnPower = 0;
 		}
 		// If down is pressed, and can decellerate or accelerate in reverse
-		if (tank.ySource > 0 && tank.xSource == 0) {
+		if (tank.ySource > 0 && tank.xSource === 0) {
 			tank.drivePower = -100;
 			tank.turnPower = 0;
 		}
 		// if Right is held, and can still turn Right, thus negative
-		if (tank.xSource > 0 && tank.ySource == 0) {
+		if (tank.xSource > 0 && tank.ySource === 0) {
 			tank.turnPower = 100;
 			tank.drivePower = 0;
 		}
 		// if Left is held, and can still turn LEFT, thus positive
-		if (tank.xSource < 0 && tank.ySource == 0) {
+		if (tank.xSource < 0 && tank.ySource === 0) {
 			tank.turnPower = -100;
 			tank.drivePower = 0;
 		}
 
+		// if both are pressed, but not 100%
+		if (Math.abs(tank.xSource) > 0 && Math.abs(tank.ySource) > 0) {
+			tank.turnPower = 100 * tank.xSource;
+			tank.drivePower = 100 * -tank.ySource;
+		}
 		// If both are pressed, put turn and power to 50%
-		if (tank.xSource != 0 && tank.ySource != 0) {
+		if (Math.abs(tank.xSource) === 1 && Math.abs(tank.ySource) === 1) {
 			tank.turnPower = 50 * tank.xSource;
 			tank.drivePower = 50 * -tank.ySource;
 		}
+
 		// Implimenting the various variables to alter the tank's everything
 		var turnAngle = tank.angle + (tank.turnPower / 100) * MAX_TURN_RATE;
 		var reverse = turnAngle;
@@ -159,16 +195,14 @@ var tanks = (function() {
 		tank.angle = turnAngle;
 		tank.x += tank.xSpeed;
 		tank.y += tank.ySpeed;
-	}
 
-	function move(deltaTime) {
-		forEach(function(tank, index, tankList) {
-			processMove(tank, deltaTime)
-		});
-	}
-
-	function length() {
-		return tankList.length;
+		var turretAngle = tank.turretAngle + ((tank.turnPower / 100) + ((tank.turretAccel * 100) / 100)) * MAX_TURN_RATE;
+		var reverse = turretAngle;
+		turretAngle = Math.abs(turretAngle) % 360;
+		if (reverse < 0) {
+			turretAngle = 360 - turretAngle;
+		}
+		tank.turretAngle = turretAngle;
 	}
 
 	return {

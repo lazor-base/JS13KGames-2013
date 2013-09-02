@@ -56,11 +56,11 @@ var connection = (function() {
 	}
 
 	function disconnectPlayer(gamePadId) {
-		if (findPlayerByGamePadId(gamePadId) === 0) {
+		if (findPlayerByGamePadId(gamePadId).localId === 0) {
 			playerOneSwapInput();
 			return false;
 		}
-		ui.remove(ui.getLocalPlayer(findPlayerByGamePadId(gamePadId)));
+		ui.remove(ui.getLocalPlayer(findPlayerByGamePadId(gamePadId).localId));
 		recyclePlayer(gamePadId);
 		if (gamePadInUse(gamePadId)) {
 			helper.removeFromArray(usedGamePads, gamePadId); // remove the gamepad id from used gamepads
@@ -123,7 +123,7 @@ var connection = (function() {
 	function findPlayerByGamePadId(gamePadId) {
 		for (var i = 0; i < activePlayers.length; i++) {
 			if (activePlayers[i].gamePadId === gamePadId) {
-				return activePlayers[i].localId;
+				return activePlayers[i];
 			}
 		}
 		return false;
@@ -207,6 +207,7 @@ var connection = (function() {
 		playerOneSwapInput: playerOneSwapInput,
 		remotePlayerIsLocal: remotePlayerIsLocal,
 		forEach: forEach,
+		findPlayerByGamePadId:findPlayerByGamePadId,
 		get connectedToServer() {
 			return connectedToServer;
 		},

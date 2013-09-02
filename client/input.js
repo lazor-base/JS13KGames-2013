@@ -2,6 +2,8 @@ var input = (function(window, document) {
 	var keysPressed = {};
 	var keyPressListeners = [];
 	var keyReleaseListeners = [];
+	var mouseListeners = [];
+	var pause = true;
 
 	function preventDefault(event) {
 		event.preventDefault();
@@ -13,6 +15,10 @@ var input = (function(window, document) {
 
 	function onKeyRelease(fn) {
 		keyReleaseListeners.push(fn);
+	}
+
+	function onMouse(fn) {
+		mouseListeners.push(fn);
 	}
 
 	function isPressed(key) {
@@ -55,14 +61,29 @@ var input = (function(window, document) {
 			}
 		});
 	}
+
+	function pauseListeners() {
+		pause = true;
+	}
+
+	function startListeners() {
+		pause = false;
+	}
 	return {
 		preventDefault: preventDefault,
 		allowPlayerOneToSwitch: allowPlayerOneToSwitch,
-		onKeyRelease:onKeyRelease,
-		keyPressListeners:keyPressListeners,
-		keyReleaseListeners:keyReleaseListeners,
-		onKeyPress:onKeyPress,
-		gamepad: gamepad
+		onKeyRelease: onKeyRelease,
+		onMouse: onMouse,
+		keyPressListeners: keyPressListeners,
+		keyReleaseListeners: keyReleaseListeners,
+		mouseListeners: mouseListeners,
+		onKeyPress: onKeyPress,
+		gamepad: gamepad,
+		get pause() {
+			return pause;
+		},
+		pauseListeners: pauseListeners,
+		startListeners: startListeners
 	};
 }(window, document));
 
@@ -70,9 +91,12 @@ ui.ready(function() {
 	var gamePadCheck = ui.get("playerOneUseGamepad");
 	var serverName = ui.get("server");
 	ui.setAttribute(serverName, "style", "border:1px solid grey;background:rgba(255,255,255,1)");
+	serverName.addEventListener("focus", input.pauseListeners);
+	serverName.addEventListener("blur", input.startListeners);
 	serverName.addEventListener("keydown", function(event) {
 		if (event.keyCode === 13) {
 			event.target.blur();
+			event.target.disabled = true;
 			server.connect(event.target.value);
 		} else {
 			ui.setAttribute(serverName, "style", "border:1px solid grey;background:rgba(255,255,255,1)");
@@ -97,18 +121,44 @@ function preventDefault(event) {
 }
 
 function keyDown(event) {
-	for (var i = 0; i < input.keyPressListeners.length; i++) {
-		input.keyPressListeners[i](event);
+	if (input.pause === false) {
+		for (var i = 0; i < input.keyPressListeners.length; i++) {
+			input.keyPressListeners[i](event);
+		}
 	}
 }
 
 function keyUp(event) {
-	for (var i = 0; i < input.keyReleaseListeners.length; i++) {
-		input.keyReleaseListeners[i](event);
+	if (input.pause === false) {
+		for (var i = 0; i < input.keyReleaseListeners.length; i++) {
+			input.keyReleaseListeners[i](event);
+		}
 	}
 }
 
-function mouseDown(event) {}
+var mouse = {
+	x: null,
+	y: null
+};
+
+function mouseDown(event) {
+	if (event.target.nodeName === "CANVAS") {
+		var serverName = ui.get("server");
+		serverName.blur();
+		event.target.focus();
+		preventDefault(event);
+		if (event.offsetX || event.offsetX == 0) { //for webkit browser like safari and chrome
+			mouse.x = event.offsetX;
+			mouse.y = event.offsetY;
+		} else if (event.layerX || event.layerX == 0) { // for mozilla firefox
+			mouse.x = event.layerX;
+			mouse.y = event.layerY;
+		}
+		for (var i = 0; i < input.mouseListeners.length; i++) {
+			input.mouseListeners[i](event);
+		}
+	}
+}
 
 // bind keylistener and mouse listener to the page
 document.addEventListener("keydown", keyDown);

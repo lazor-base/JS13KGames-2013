@@ -2,6 +2,7 @@ var commands = (function() {
 	var commandList = [];
 	var history = [];
 	var executeListeners = [];
+	var lastTimeStamp = 0;
 
 	function forEach(fn) {
 		for (var i = 0; i < commandList.length; i++) {
@@ -10,15 +11,21 @@ var commands = (function() {
 	}
 
 	function process(deltaTime) {
+		lastTimeStamp = 0;
 		forEach(function(command, index, commandList) {
-			execute(command, false, deltaTime);
+			if (command.timeStamp > lastTimeStamp) {
+				execute(command, false, deltaTime);
+			} else {
+				history.push(helper.removeFromArray(commandList, command));
+			}
 		});
 	}
 
 	function execute(command, notYetPushed, deltaTime) {
 		if (time.now() >= command.timeStamp) {
 			for (var i = 0; i < executeListeners.length; i++) {
-				executeListeners[i](command, deltaTime);
+				lastTimeStamp = command.timeStamp;
+				executeListeners[i](command, deltaTime, time.now() - command.timeStamp);
 			}
 			if (!notYetPushed) {
 				history.push(helper.removeFromArray(commandList, command));

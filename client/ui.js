@@ -28,6 +28,7 @@ var ui = (function(window, document) {
 	}
 
 	function getRemotePlayer(remoteId) {
+		// console.log(remoteId)
 		return getPlayer(remoteId, "remoteId");
 	}
 
