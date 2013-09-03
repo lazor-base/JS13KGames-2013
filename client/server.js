@@ -1,8 +1,8 @@
 var server = (function(document) {
 	var socket;
 	var fns = [];
-	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/tanks.js", "/commands.js"];
-	var scriptIds = ["server", "animationLoop", "tanks", "commands"]
+	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/tanks.js", "/commands.js", "/bullets.js"];
+	var scriptIds = ["server", "animationLoop", "tanks", "commands", "bullets"];
 	var ready = 0;
 	var serverReady = false;
 	var currentServer = null;
@@ -26,6 +26,7 @@ var server = (function(document) {
 					script.onload = getReady;
 				}
 				script.onerror = server.serverFail;
+				console.log("http://" + ip + scripts[i])
 				ui.setAttribute(script, ["id", id, "src", "http://" + ip + scripts[i]]);
 				document.body.appendChild(script);
 			}
@@ -62,6 +63,7 @@ var server = (function(document) {
 		});
 		socket.on("newCommand", function(command, timeStamp) {
 			socket.emit("pong", timeStamp);
+			command.ping = command.ping || connection.findPlayerByLocalId(0).ping;
 			ui.changePlayer(ui.getRemotePlayer(command.remoteId), "ping", command.ping);
 			commands.push(command)
 		});
@@ -75,10 +77,10 @@ var server = (function(document) {
 		socket.on('disconnects', function(playerList, timeStamp) {
 			socket.emit("pong", timeStamp);
 			console.log("Removing", playerList.length, "players")
-			tanks.remove(playerList);
-			for (var i = 0; i < playerList.length; i++) {
-				ui.remove(ui.getRemotePlayer(playerList[i]));
-			}
+			tanks.remove(playerList, function(remoteId) {
+				console.log(ui.getRemotePlayer(remoteId))
+				ui.remove(ui.getRemotePlayer(remoteId));
+			});
 		});
 		connection.joinServer();
 		getReady();
@@ -103,6 +105,11 @@ var server = (function(document) {
 	}
 
 	function triggerReady() {
+		var inputs = document.querySelectorAll("input[data-ip]");
+		for(var i=0;i<inputs.length;i++) {
+			inputs[i].disabled = true;
+		}
+		ui.get("server").disabled = true;
 		if (ready === scripts.length) {
 			for (var i = 0; i < fns.length; i++) {
 				fns[i]();

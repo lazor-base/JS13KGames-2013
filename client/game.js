@@ -117,7 +117,9 @@ var game = (function() {
 		});
 		animationLoop.every(0, commands.process);
 		animationLoop.every(0, draw.clearCanvas);
-		animationLoop.every(0, tanks.move);
+		animationLoop.every(0, tanks.parse);
+		animationLoop.every(0, bullets.parse);
+		animationLoop.every(0, tanks.updateCounter);
 		animationLoop.every(0, drawEntity);
 		animationLoop.startLoop();
 	});
@@ -176,8 +178,13 @@ var game = (function() {
 		draw.dot(tank, home);
 	}
 
+	function drawBullets(bullet, index, bulletList) {
+		draw.bullet(bullet);
+	}
+
 	function drawEntity() {
 		tanks.forEach(drawTanks);
+		bullets.forEach(drawBullets);
 		// add bullet code here too
 		// add effects code here
 	}

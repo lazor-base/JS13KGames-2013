@@ -2,6 +2,8 @@ var tanks = (function() {
 	"use strict";
 	var usedPlayers = [];
 	var tankList = [];
+	var recycleTime = 250;
+	var onHurtListeners = [];
 
 	function add(newPlayers, callback) {
 		for (var i = 0; i < newPlayers.length; i++) {
@@ -20,13 +22,35 @@ var tanks = (function() {
 		});
 	}
 
+	function onHurt(fn) {
+		onHurtListeners.push(fn);
+	}
+
+	function hurt(source, target) {
+		for (var i = 0; i < onHurtListeners.length; i++) {
+			onHurtListeners[i](source, target);
+		}
+	}
+
+	function updateCounter(deltaTime) {
+		forEach(function(tank, index, tankList) {
+			tank.timer += deltaTime;
+		});
+	}
+
 	function execute(command, deltaTime, remainder) {
 		var tank = getTankById(command.remoteId);
 		tank.ping = command.ping;
 		tank.remainder = remainder;
 		tank.deltaTime = deltaTime;
 		if (typeof command.shoot !== "undefined") {
-			// tank.turretAngle = command.shoot;
+			tank.shoot = command.shoot;
+			if (tank.shoot === 0) { // reset the weapon recycle timer
+				tank.timer = 0;
+			}
+		}
+		if (typeof command.changeWeapon !== "undefined") {
+			tank.weaponType = command.changeWeapon;
 		}
 		if (typeof command.turretLeft !== "undefined") {
 			tank.turretAccel = -Math.abs(command.turretLeft);
@@ -49,6 +73,8 @@ var tanks = (function() {
 	}
 
 	function create(remoteId, socketId, ping) {
+		var weapons = bullets.weaponList;
+		var index = helper.randomFromInterval(0, weapons.length - 1);
 		if (usedPlayers.length > 0) {
 			var recycledPlayer = helper.removeFromArrayAtIndex(usedPlayers);
 			recycledPlayer.remoteId = remoteId;
@@ -65,18 +91,22 @@ var tanks = (function() {
 			recycledPlayer.turnPower = 0;
 			recycledPlayer.deltaTime = 0;
 			recycledPlayer.remainder = 0;
+			recycledPlayer.timer = 0;
+			recycledPlayer.shoot = 0;
+			recycledPlayer.lastShot = 0;
 			recycledPlayer.ping = ping;
 			recycledPlayer.turretAngle = 0;
 			recycledPlayer.turretAccel = 0;
+			recycledPlayer.weaponType = weapons[index];
+			recycledPlayer.width = 10;
+			recycledPlayer.height = 20;
 			return recycledPlayer;
 		} else {
 			return {
 				remoteId: remoteId,
 				socketId: socketId,
-				// x: helper.randomFromInterval(100, 400),
-				// y: helper.randomFromInterval(100, 400),
-				x: 100,
-				y: 100,
+				x: helper.randomFromInterval(100, 400),
+				y: helper.randomFromInterval(100, 400),
 				health: 1,
 				angle: 0,
 				ySpeed: 0,
@@ -87,8 +117,14 @@ var tanks = (function() {
 				turnPower: 0,
 				deltaTime: 0,
 				remainder: 0,
+				timer: 0,
+				shoot: 0,
+				lastShot: 0,
 				turretAngle: 0,
 				turretAccel: 0,
+				weaponType: weapons[index],
+				width: 10,
+				height: 20,
 				ping: ping
 			};
 		}
@@ -126,14 +162,27 @@ var tanks = (function() {
 		}
 	}
 
-	function move(deltaTime) {
+	function parse(deltaTime) {
 		forEach(function(tank, index, tankList) {
 			processMove(tank, deltaTime);
+			processShoot(tank, deltaTime);
 		});
 	}
 
 	function length() {
 		return tankList.length;
+	}
+
+	function processShoot(tank, deltaTime) {
+		if (tank.timer > recycleTime) {
+			if (tank.shoot === 1) {
+				// tank.weaponType = "flame"
+				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponType)) {
+					tank.lastShot = time.now();
+					bullets.create(tank.weaponType, tank.turretAngle, tank.x, tank.y);
+				}
+			}
+		}
 	}
 
 	function processMove(tank, deltaTime) {
@@ -214,11 +263,14 @@ var tanks = (function() {
 			return tankList.length;
 		},
 		create: create,
-		move: move,
+		parse: parse,
+		hurt: hurt,
 		getTankById: getTankById,
+		updateCounter: updateCounter,
 		execute: execute,
 		replace: replace,
 		forEach: forEach,
+		onHurt: onHurt,
 		remove: remove
 	};
 }());

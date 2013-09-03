@@ -10,6 +10,7 @@ var fs = require('fs');
 var helper = global.helper = require("./helper.js");
 var commands = global.commands = require("./commands.js");
 var animationLoop = global.animationLoop = require("./animationLoop.js");
+var bullets = global.bullets = require("./bullets.js");
 var tanks = global.tanks = require("./tanks.js");
 
 var mimeTypes = {
@@ -105,13 +106,13 @@ io.sockets.on('connection', function(socket) {
 		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
 		socket.get("ping", function(err, ping) {
 			var command = {
-				remoteId:remoteId,
-				ping:ping,
-				timeStamp:Date.now() + 50,
+				remoteId: remoteId,
+				ping: ping,
+				timeStamp: Date.now() + 50,
 			};
 			command[action] = value;
 			io.sockets.emit("newCommand", command, Date.now());
-			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
+			// io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);
 		});
 	});
@@ -149,7 +150,25 @@ var time = global.time = {
 	}
 };
 
+function changeWeapon() {
+	tanks.forEach(function(tank, index, tankList) {
+		var weapons = bullets.weaponList;
+		var index = helper.randomFromInterval(0, weapons.length - 1);
+		tank.weaponType = weapons[index];
+		var command = {
+			remoteId: tank.remoteId,
+			timeStamp: Date.now() + 50,
+		};
+		command["changeWeapon"] = weapons[index];
+		io.sockets.emit("newCommand", command, Date.now());
+		commands.push(command);
+	});
+}
+
 commands.onExecute(tanks.execute);
 animationLoop.every(0, commands.process);
-animationLoop.every(0, tanks.move);
+animationLoop.every(0, tanks.parse);
+animationLoop.every(0, bullets.parse);
+animationLoop.every(0, tanks.updateCounter);
+animationLoop.every(5000, changeWeapon);
 animationLoop.startLoop();

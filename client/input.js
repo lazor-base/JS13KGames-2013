@@ -90,13 +90,18 @@ var input = (function(window, document) {
 ui.ready(function() {
 	var gamePadCheck = ui.get("playerOneUseGamepad");
 	var serverName = ui.get("server");
+	document.querySelector("input[data-ip]").addEventListener("click",function(){
+		console.log(event.target.dataset.ip);
+		serverName.value = event.target.dataset.ip;
+			server.connect(event.target.dataset.ip);
+	});
 	ui.setAttribute(serverName, "style", "border:1px solid grey;background:rgba(255,255,255,1)");
 	serverName.addEventListener("focus", input.pauseListeners);
 	serverName.addEventListener("blur", input.startListeners);
 	serverName.addEventListener("keydown", function(event) {
 		if (event.keyCode === 13) {
 			event.target.blur();
-			event.target.disabled = true;
+			// event.target.disabled = true;
 			server.connect(event.target.value);
 		} else {
 			ui.setAttribute(serverName, "style", "border:1px solid grey;background:rgba(255,255,255,1)");

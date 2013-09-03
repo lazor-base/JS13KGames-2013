@@ -15,8 +15,8 @@ var helper = (function() {
 		return array.splice(index || 0, 1)[0];
 	}
 
-	function randomFromInterval(from, to) {
-		return Math.floor(Math.random() * (to - from + 1) + from);
+	function randomFromInterval(min, max) {
+		return Math.floor(Math.random() * (max - min + 1) + min);
 	}
 	return {
 		contains: contains,
