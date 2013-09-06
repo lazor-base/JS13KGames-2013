@@ -95,7 +95,7 @@ var tanks = (function() {
 		player.x = 100;
 		player.y = 100;
 		player.health = 100;
-		player.angle = 45;
+		player.angle = 0;
 		player.xSpeed = 0;
 		player.ySpeed = 0;
 		player.xSource = 0;
@@ -108,7 +108,7 @@ var tanks = (function() {
 		player.shoot = 0;
 		player.lastShot = 0;
 		player.ping = ping;
-		player.turretAngle = 45;
+		player.turretAngle = 0;
 		player.turretAccel = 0;
 		player.weaponType = weapons[index];
 		player.width = 20;
@@ -163,7 +163,7 @@ var tanks = (function() {
 	function processShoot(tank, deltaTime) {
 		if (tank.timer > recycleTime) {
 			if (tank.shoot === 1) {
-				// tank.weaponType = "laser"
+				tank.weaponType = "laser"
 				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponType)) {
 					tank.lastShot = time.now();
 					bullets.create(tank);

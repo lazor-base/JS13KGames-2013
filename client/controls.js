@@ -11,19 +11,19 @@ var controls = (function() {
 	}
 
 	function keyPress(event) {
-		changeKey(event.keyCode, -1, 1);
+		changeKey(event, event.keyCode, -1, 1);
 	}
 
 	function keyRelease(event) {
-		changeKey(event.keyCode, -1, 0);
+		changeKey(event, event.keyCode, -1, 0);
 	}
 
 	function mouseDown(event) {
-		changeKey(event.button, -2, 1);
+		changeKey(event, event.button, -2, 1);
 	}
 
 	function mouseUp(event) {
-		changeKey(event.button, -2, 0);
+		changeKey(event, event.button, -2, 0);
 	}
 
 	function mouseMove(event) {
@@ -103,9 +103,10 @@ var controls = (function() {
 		}
 	}
 
-	function changeKey(keyCode, hardwareId, value) {
+	function changeKey(event, keyCode, hardwareId, value) {
 		var action = config.matchKey(hardwareId, keyCode);
 		if (action !== false) { // only proceed if this key is bound to an action
+			event.preventDefault();
 			players[hardwareId] = players[hardwareId] || new Player();
 			if (hardwareId < 0) { // a catch for player 0 using keyboard and mouse
 				players[hardwareId].localId = 0;

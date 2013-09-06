@@ -226,10 +226,9 @@ var physics = (function() {
 				}
 			}
 		}
-		var tx = tank.x;
-		var ty = tank.y;
-		var bx = bullet.x;
-		var by = bullet.y;
+		if(overlap === 99999999) {
+			return false;
+		}
 		return {
 			"overlap": overlap + 0.001,
 			"axis": smallest

@@ -69,16 +69,18 @@ var bullets = (function() {
 			reload: 700,
 			color: "blue",
 			frameModifier: function(bullet) {
-				bullet.x = adjustPosition(bullet.source.x, bullet.source.turretAngle, "cos", bullet.source, bullet);
-				bullet.y = adjustPosition(bullet.source.y, bullet.source.turretAngle, "sin", bullet.source, bullet);
 				bullet.angle = bullet.source.turretAngle;
+				bullet.x = changeXPosition(bullet.source.x, bullet, bullet.source, bullet.angle);
+				bullet.y = changeYPosition(bullet.source.y, bullet, bullet.source, bullet.angle);
 			},
 			collide: function(bullet, tank, result) {
-				if (!bullet.contactTime) {
+				if (bullet.contactTime === 0) {
 					bullet.contactTime = time.now();
+					tank.health -= bullet.damage / bullet.duration;
+				} else {
+					tank.health = tank.health - ((bullet.damage * bullet.deltaTime) / bullet.duration);
 				}
-
-				console.log(result, bullet)
+				var closestTank = (result.axis.x - tank.x) * (result.axis.y - tank.y);
 				// destroy(bullet)
 
 			}
@@ -95,8 +97,24 @@ var bullets = (function() {
 		}
 	}
 
-	function adjustPosition(position, distanceA, distanceB, angle, type) {
-		return position + (((distanceA / 2) + (distanceB / 2)) * Math[type](angle * (Math.PI / 180)));
+	function changeXPosition(xPosition, bullet, tank, angle) {
+		var x = getX(bullet, tank);
+		var y = getY(bullet, tank);
+		return xPosition + (x + y) * Math.cos(angle * (Math.PI / 180));
+	}
+
+	function changeYPosition(yPosition, bullet, tank, angle) {
+		var x = getX(bullet, tank);
+		var y = getY(bullet, tank);
+		return yPosition + (x + y) * Math.sin(angle * (Math.PI / 180));
+	}
+
+	function getX(bullet, tank) {
+		return (tank.width / 2) + (bullet.width / 2);
+	}
+
+	function getY(bullet, tank) {
+		return (tank.height / 2) + (bullet.height / 2);
 	}
 
 	function Bullet(angle, x, y, weapon, tank) {
@@ -114,8 +132,8 @@ var bullets = (function() {
 		bullet.width = weapon.width;
 		bullet.height = weapon.height;
 		bullet.color = weapon.color;
-		bullet.x = adjustPosition(x, tank.width, bullet.width, angle, "cos");
-		bullet.y = adjustPosition(y, tank.height, bullet.height, angle, "sin");
+		bullet.x = changeXPosition(x, bullet, tank, angle);
+		bullet.y = changeYPosition(y, bullet, tank, angle);
 		bullet.angle = angle;
 		bullet.collide = weapon.collide;
 		bullet.contactTime = 0; // used for weapons like the laser where the weapon does damage as it has contact with the player
@@ -123,6 +141,7 @@ var bullets = (function() {
 			bullet.duration = weapon.duration;
 		}
 		bullet.remainder = 0;
+		bullet.deltaTime = 0;
 		bullet.startTime = time.now();
 		bullet.frameModifier = weapon.frameModifier;
 		bullet.points = [];
@@ -181,6 +200,7 @@ var bullets = (function() {
 	}
 
 	function processMove(bullet, deltaTime) {
+		bullet.deltaTime = deltaTime;
 		var MAX_SPEED = bullet.speed * (deltaTime / 1000);
 		var turnAngle = bullet.angle;
 		var reverse = turnAngle;
