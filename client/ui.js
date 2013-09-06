@@ -1,5 +1,5 @@
 var ui = (function(window, document) {
-	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span> | X: <span class="x">{{x}}</span> | Y: <span class="y">{{y}}</span></li>';
+	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span> | X: <span class="x">{{x}}</span> | Y: <span class="y">{{y}}</span> | Weapon: <span class="weapon">{{weapon}}</span> | Health: <span class="health">{{health}}</span></li>';
 
 	function createElement(name) {
 		return document.createElement(name);
@@ -70,23 +70,33 @@ var ui = (function(window, document) {
 	}
 
 	function remove(node) {
-		node.parentNode.removeChild(node);
+		if (node !== null) {
+			node.parentNode.removeChild(node);
+		}
 	}
 
 	function changePlayer(player, property, value) {
 		function handleRemoteId(property, value) {
 			if (property === "remoteId") {
-				player.dataset.remoteid = value;
+				if (player.dataset.remoteid !== value) {
+					player.dataset.remoteid = value;
+				}
 			}
 		}
 		if (player !== null) {
 			if (typeof value !== "undefined") {
 				handleRemoteId(property, value);
-				player.querySelector('span[class="' + property + '"]').textContent = value;
+				var element = player.querySelector('span[class="' + property + '"]')
+				if (element.textContent !== value) {
+					element.textContent = value;
+				}
 			} else {
 				for (var i = 0; i < property.length; i += 2) {
 					handleRemoteId(property[i], property[i + 1]);
-					player.querySelector('span[class="' + property[i] + '"]').textContent = property[i + 1];
+					var element = player.querySelector('span[class="' + property[i] + '"]');
+					if (element.textContent !== property[i + 1]) {
+						element.textContent = property[i + 1];
+					}
 				}
 			}
 		}

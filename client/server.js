@@ -1,8 +1,8 @@
 var server = (function(document) {
 	var socket;
 	var fns = [];
-	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/tanks.js", "/commands.js", "/bullets.js"];
-	var scriptIds = ["server", "animationLoop", "tanks", "commands", "bullets"];
+	var scripts = ["/socket.io/socket.io.js", "/animationLoop.js", "/tanks.js", "/commands.js", "/bullets.js", "/physics.js"];
+	var scriptIds = ["server", "animationLoop", "tanks", "commands", "bullets","physics"];
 	var ready = 0;
 	var serverReady = false;
 	var currentServer = null;
@@ -26,7 +26,6 @@ var server = (function(document) {
 					script.onload = getReady;
 				}
 				script.onerror = server.serverFail;
-				console.log("http://" + ip + scripts[i])
 				ui.setAttribute(script, ["id", id, "src", "http://" + ip + scripts[i]]);
 				document.body.appendChild(script);
 			}
@@ -78,7 +77,6 @@ var server = (function(document) {
 			socket.emit("pong", timeStamp);
 			console.log("Removing", playerList.length, "players")
 			tanks.remove(playerList, function(remoteId) {
-				console.log(ui.getRemotePlayer(remoteId))
 				ui.remove(ui.getRemotePlayer(remoteId));
 			});
 		});
@@ -105,8 +103,9 @@ var server = (function(document) {
 	}
 
 	function triggerReady() {
+		serverReady = true;
 		var inputs = document.querySelectorAll("input[data-ip]");
-		for(var i=0;i<inputs.length;i++) {
+		for (var i = 0; i < inputs.length; i++) {
 			inputs[i].disabled = true;
 		}
 		ui.get("server").disabled = true;
@@ -144,6 +143,9 @@ var server = (function(document) {
 		});
 	}
 	return {
+		get serverReady() {
+			return serverReady;
+		},
 		connect: connect,
 		removePlayer: removePlayer,
 		addPlayer: addPlayer,

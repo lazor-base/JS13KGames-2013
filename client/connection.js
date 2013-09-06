@@ -60,6 +60,9 @@ var connection = (function() {
 			playerOneSwapInput();
 			return false;
 		}
+		if(server.serverReady) {
+			server.removePlayer(findPlayerByGamePadId(gamePadId).remoteId);
+		}
 		ui.remove(ui.getLocalPlayer(findPlayerByGamePadId(gamePadId).localId));
 		recyclePlayer(gamePadId);
 		if (gamePadInUse(gamePadId)) {

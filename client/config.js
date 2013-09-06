@@ -3,11 +3,11 @@ var config = (function() {
 	var types = ["mouse", "keyboard", "gamepad"];
 	var actions = ["shoot", "left", "right", "accel", "decel", "turretLeft", "turretRight"];
 	var defaults = [
-		[1, 38, -1],
-		[-1, 65, 14],
-		[-1, 68, 15],
-		[-1, 87, 12],
-		[-1, 83, 13],
+		[1, 38, 5],
+		[-1, 65, -1],
+		[-1, 68, -1],
+		[-1, 87, -1],
+		[-1, 83, -1],
 		[0, 37, -1],
 		[2, 39, -1],
 	];

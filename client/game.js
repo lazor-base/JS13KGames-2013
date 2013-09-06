@@ -112,14 +112,17 @@ var game = (function() {
 			// 	handleChange();
 			// }
 			tanks.forEach(function(tank, index, tankList) {
-				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x, "y", tank.y]);
+				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x, "y", tank.y, "weapon", tank.weaponType, "health", tank.health]);
 			});
 		});
-		animationLoop.every(0, commands.process);
+		tanks.onHurt(bullets.collide);
+		// tanks.onHurt(effects);
 		animationLoop.every(0, draw.clearCanvas);
+		animationLoop.every(0, commands.process);
 		animationLoop.every(0, tanks.parse);
 		animationLoop.every(0, bullets.parse);
 		animationLoop.every(0, tanks.updateCounter);
+		// animationLoop.every(0, physics.render);
 		animationLoop.every(0, drawEntity);
 		animationLoop.startLoop();
 	});

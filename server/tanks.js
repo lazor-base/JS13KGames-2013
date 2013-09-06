@@ -17,7 +17,15 @@ var tanks = (function() {
 	function replace(newTank) {
 		forEach(function(tank, index, tankList) {
 			if (tank.remoteId === newTank.remoteId) {
-				tankList[index] = newTank;
+				tankList[index].x = newTank.x;
+				tankList[index].y = newTank.y;
+				tankList[index].angle = newTank.angle;
+				tankList[index].xSpeed = newTank.xSpeed;
+				tankList[index].ySpeed = newTank.ySpeed;
+				tankList[index].turretAccel = newTank.turretAccel;
+				tankList[index].turretAngle = newTank.turretAngle;
+				tankList[index].health = newTank.health;
+				// tankList[index] = newTank;
 			}
 		});
 	}
@@ -26,9 +34,9 @@ var tanks = (function() {
 		onHurtListeners.push(fn);
 	}
 
-	function hurt(source, target) {
+	function hurt(source, target, result) {
 		for (var i = 0; i < onHurtListeners.length; i++) {
-			onHurtListeners[i](source, target);
+			onHurtListeners[i](source, target, result);
 		}
 	}
 
@@ -76,58 +84,37 @@ var tanks = (function() {
 		var weapons = bullets.weaponList;
 		var index = helper.randomFromInterval(0, weapons.length - 1);
 		if (usedPlayers.length > 0) {
-			var recycledPlayer = helper.removeFromArrayAtIndex(usedPlayers);
-			recycledPlayer.remoteId = remoteId;
-			recycledPlayer.socketId = socketId;
-			recycledPlayer.x = helper.randomFromInterval(100, 400);
-			recycledPlayer.y = helper.randomFromInterval(100, 400);
-			recycledPlayer.health = 1;
-			recycledPlayer.angle = 0;
-			recycledPlayer.xSpeed = 0;
-			recycledPlayer.ySpeed = 0;
-			recycledPlayer.xSource = 0;
-			recycledPlayer.ySource = 0;
-			recycledPlayer.drivePower = 0;
-			recycledPlayer.turnPower = 0;
-			recycledPlayer.deltaTime = 0;
-			recycledPlayer.remainder = 0;
-			recycledPlayer.timer = 0;
-			recycledPlayer.shoot = 0;
-			recycledPlayer.lastShot = 0;
-			recycledPlayer.ping = ping;
-			recycledPlayer.turretAngle = 0;
-			recycledPlayer.turretAccel = 0;
-			recycledPlayer.weaponType = weapons[index];
-			recycledPlayer.width = 10;
-			recycledPlayer.height = 20;
-			return recycledPlayer;
+			var player = helper.removeFromArrayAtIndex(usedPlayers);
 		} else {
-			return {
-				remoteId: remoteId,
-				socketId: socketId,
-				x: helper.randomFromInterval(100, 400),
-				y: helper.randomFromInterval(100, 400),
-				health: 1,
-				angle: 0,
-				ySpeed: 0,
-				xSpeed: 0,
-				ySource: 0,
-				xSource: 0,
-				drivePower: 0,
-				turnPower: 0,
-				deltaTime: 0,
-				remainder: 0,
-				timer: 0,
-				shoot: 0,
-				lastShot: 0,
-				turretAngle: 0,
-				turretAccel: 0,
-				weaponType: weapons[index],
-				width: 10,
-				height: 20,
-				ping: ping
-			};
+			var player = {};
 		}
+		player.remoteId = remoteId;
+		player.socketId = socketId;
+		// player.x = helper.randomFromInterval(100, 400);
+		// player.y = helper.randomFromInterval(100, 400);
+		player.x = 100;
+		player.y = 100;
+		player.health = 100;
+		player.angle = 45;
+		player.xSpeed = 0;
+		player.ySpeed = 0;
+		player.xSource = 0;
+		player.ySource = 0;
+		player.drivePower = 0;
+		player.turnPower = 0;
+		player.deltaTime = 0;
+		player.remainder = 0;
+		player.timer = 0;
+		player.shoot = 0;
+		player.lastShot = 0;
+		player.ping = ping;
+		player.turretAngle = 45;
+		player.turretAccel = 0;
+		player.weaponType = weapons[index];
+		player.width = 20;
+		player.height = 10;
+		player.points = [];
+		return player;
 	}
 
 	function remove(playerIds, callback) {
@@ -176,10 +163,10 @@ var tanks = (function() {
 	function processShoot(tank, deltaTime) {
 		if (tank.timer > recycleTime) {
 			if (tank.shoot === 1) {
-				// tank.weaponType = "flame"
+				// tank.weaponType = "laser"
 				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponType)) {
 					tank.lastShot = time.now();
-					bullets.create(tank.weaponType, tank.turretAngle, tank.x, tank.y);
+					bullets.create(tank);
 				}
 			}
 		}
@@ -244,6 +231,9 @@ var tanks = (function() {
 		tank.angle = turnAngle;
 		tank.x += tank.xSpeed;
 		tank.y += tank.ySpeed;
+		if (tank.x > 700) {
+
+		}
 
 		var turretAngle = tank.turretAngle + ((tank.turnPower / 100) + ((tank.turretAccel * 100) / 100)) * MAX_TURN_RATE;
 		var reverse = turretAngle;

@@ -67,7 +67,7 @@ var controls = (function() {
 		if (tank) {
 			players[hardwareId] = players[hardwareId] || new Player();
 			for (var i = 0; i < gamepad.buttons.length; i++) {
-				// changeKey(i, hardwareId, gamepad.buttons[i]);
+				changeKey(i, hardwareId, gamepad.buttons[i]);
 			}
 			players[hardwareId].localId = connection.findPlayerByGamePadId(hardwareId).localId;
 			// for the hardcoded analogue sticks

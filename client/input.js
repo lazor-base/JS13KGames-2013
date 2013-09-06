@@ -91,7 +91,6 @@ ui.ready(function() {
 	var gamePadCheck = ui.get("playerOneUseGamepad");
 	var serverName = ui.get("server");
 	document.querySelector("input[data-ip]").addEventListener("click",function(){
-		console.log(event.target.dataset.ip);
 		serverName.value = event.target.dataset.ip;
 			server.connect(event.target.dataset.ip);
 	});

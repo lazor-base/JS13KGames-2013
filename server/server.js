@@ -10,6 +10,7 @@ var fs = require('fs');
 var helper = global.helper = require("./helper.js");
 var commands = global.commands = require("./commands.js");
 var animationLoop = global.animationLoop = require("./animationLoop.js");
+var physics = global.physics = require("./physics.js");
 var bullets = global.bullets = require("./bullets.js");
 var tanks = global.tanks = require("./tanks.js");
 
@@ -112,7 +113,7 @@ io.sockets.on('connection', function(socket) {
 			};
 			command[action] = value;
 			io.sockets.emit("newCommand", command, Date.now());
-			// io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
+			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
 			commands.push(command);
 		});
 	});
@@ -165,6 +166,7 @@ function changeWeapon() {
 	});
 }
 
+tanks.onHurt(bullets.collide);
 commands.onExecute(tanks.execute);
 animationLoop.every(0, commands.process);
 animationLoop.every(0, tanks.parse);
