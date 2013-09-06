@@ -163,7 +163,7 @@ var tanks = (function() {
 	function processShoot(tank, deltaTime) {
 		if (tank.timer > recycleTime) {
 			if (tank.shoot === 1) {
-				tank.weaponType = "laser"
+				// tank.weaponType = "laser"
 				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponType)) {
 					tank.lastShot = time.now();
 					bullets.create(tank);

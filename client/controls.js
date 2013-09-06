@@ -67,7 +67,7 @@ var controls = (function() {
 		if (tank) {
 			players[hardwareId] = players[hardwareId] || new Player();
 			for (var i = 0; i < gamepad.buttons.length; i++) {
-				changeKey(i, hardwareId, gamepad.buttons[i]);
+				changeKey({}, i, hardwareId, gamepad.buttons[i]);
 			}
 			players[hardwareId].localId = connection.findPlayerByGamePadId(hardwareId).localId;
 			// for the hardcoded analogue sticks
@@ -106,7 +106,9 @@ var controls = (function() {
 	function changeKey(event, keyCode, hardwareId, value) {
 		var action = config.matchKey(hardwareId, keyCode);
 		if (action !== false) { // only proceed if this key is bound to an action
-			event.preventDefault();
+			if (typeof event.preventDefault !== "undefined") {
+				event.preventDefault();
+			}
 			players[hardwareId] = players[hardwareId] || new Player();
 			if (hardwareId < 0) { // a catch for player 0 using keyboard and mouse
 				players[hardwareId].localId = 0;

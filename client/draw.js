@@ -289,7 +289,7 @@ var draw = (function(window, document) {
 
 	function bullet(bullet) {
 		rotate(bullet.angle, bullet.x, bullet.y, function() {
-			context.fillStyle = bullet.color;
+			context.fillStyle = setAlpha(bullet.color, (bullet.distance-bullet.currentDistance) / bullet.distance);
 			context.fillRect(-(bullet.width / 2), -(bullet.height / 2), bullet.width, bullet.height);
 		});
 	}
