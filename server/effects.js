@@ -34,8 +34,9 @@ var effects = (function() {
 		function directionModifier(particle, effect, index) {
 			particle.angle = particle.angle + helper.randomFromInterval(-30, 30);
 		}
+		var pointOfImpact = physics.intercept(bullet,target);
 		var numberOfParticles = bullet.damage;
-		var effect = create(target.id + ("" + Math.random()), bullet.x, bullet.y, numberOfParticles, 150, 50, bullet.angle - 180, 0, "black", null, directionModifier, null, null, null);
+		var effect = create(target.id + ("" + Math.random()), pointOfImpact[0], pointOfImpact[1], numberOfParticles, 150, 50, bullet.angle - 180, 0, "black", null, directionModifier, null, null, null);
 	}
 
 	function deathEffect(tank) {

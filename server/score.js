@@ -12,9 +12,8 @@ var score = (function() {
 			}
 			tank.currentScore = tank.currentScore - (tank.currentScore / 4);
 		}
-		console.log(bullet.source.currentScore, tank.currentScore, scores)
-		scores[tank.socketId + "" + tank.remoteId] = tank.currentScore;
-		scores[bullet.source.socketId + "" + bullet.source.remoteId] = bullet.source.currentScore;
+		scores[tank.socketId] = tank.currentScore;
+		scores[bullet.source.socketId] = bullet.source.currentScore;
 	}
 
 	function saveToDisk() {
@@ -55,9 +54,7 @@ var score = (function() {
 	}
 
 	function listEntries(scoreList, callback) {
-		console.log(scoreList)
 		for (var i = 0; i < scoreList.length; i++) {
-			console.log(scoreList[i])
 			callback(scoreList[i].name, scoreList[i].score);
 		}
 	}
@@ -82,7 +79,7 @@ var score = (function() {
 				score: entries[attr]
 			});
 		}
-		scores = scores.sort(sort('score', true, parseInt));
+		scores = scores.sort(sort('score', false, parseInt));
 		return scores;
 	}
 	return {

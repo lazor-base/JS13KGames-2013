@@ -18,8 +18,8 @@ var physics = (function() {
 		for (var i = 0; i < object.points.length; i++) {
 			var x = object.points[i].x;
 			var y = object.points[i].y;
-			object.points[i].x = Math.cos(radians) * x - Math.sin(radians) * y;
-			object.points[i].y = Math.sin(radians) * x + Math.cos(radians) * y;
+			object.points[i].x = (Math.cos(radians) * x - Math.sin(radians) * y);
+			object.points[i].y = (Math.sin(radians) * x + Math.cos(radians) * y);
 		}
 	}
 
@@ -262,9 +262,88 @@ var physics = (function() {
 		};
 	}
 
+	function intercept(bullet, rectangle) {
+		var xBullet = bullet.x + Math.cos(bullet.angle * Math.PI / 180);
+		var yBullet = bullet.y + Math.sin(bullet.angle * Math.PI / 180);
+
+		function slope(x1, y1, x2, y2) {
+			return (y1 - y2) / (x1 - x2);
+		}
+		var changeInX = (bullet.x - xBullet);
+		var bulletSlope = (bullet.y - yBullet) / changeInX;
+		if (changeInX === 0) {
+			bulletSlope = 9999999;
+		}
+		var bulletYintercept = bullet.y - (bulletSlope * bullet.x);
+		var entryAngle = (rectangle.angle * Math.PI / 180) + (bullet.angle * Math.PI / 180);
+		var magicAngle = Math.atan2((rectangle.height / 2), (rectangle.width / 2));
+
+		var LRAngle = magicAngle;
+		var LLAngle = Math.PI - magicAngle;
+		var ULAngle = Math.PI + magicAngle;
+		var URAngle = 2 * Math.PI - magicAngle;
+		var radians = rectangle.angle * Math.PI / 180;
+
+		function xVal(x, y) {
+			return Math.cos(radians) * x - Math.sin(radians) * y;
+		}
+
+		function yVal(x, y) {
+			return Math.sin(radians) * x + Math.cos(radians) * y;
+		}
+		var height = (rectangle.height / 2);
+		var width = (rectangle.width / 2);
+		var ulx = rectangle.x + xVal(-width, -height);
+		var uly = rectangle.y + yVal(-width, -height);
+		var urx = rectangle.x + xVal(+width, -height);
+		var ury = rectangle.y + yVal(+width, -height);
+		var lrx = rectangle.x + xVal(+width, +height);
+		var lry = rectangle.y + yVal(+width, +height);
+		var llx = rectangle.x + xVal(-width, +height);
+		var lly = rectangle.y + yVal(-width, +height);
+		if ((URAngle < 360 - entryAngle || URAngle < entryAngle) && (360 - entryAngle < LRAngle || entryAngle < LRAngle)) {
+			// rightwards
+			var changeInX = (urx - lrx);
+			var rectangleSlope = (ury - lry) / changeInX;
+			if (changeInX === 0) {
+				rectangleSlope = 9999999;
+			}
+			var rectangleIntercept = uly - rectangleSlope * ulx;
+		} else if (LLAngle > entryAngle && entryAngle > LRAngle) {
+			// downwards
+			var changeInX = (urx - ulx);
+			var rectangleSlope = (ury - uly) / changeInX;
+			if (changeInX === 0) {
+				rectangleSlope = 9999999;
+			}
+			var rectangleIntercept = uly - rectangleSlope * ulx;
+		} else if (ULAngle < entryAngle && entryAngle < LLAngle) {
+			// leftwards
+			var changeInX = (ulx - llx);
+			var rectangleSlope = (uly - lly) / changeInX;
+			if (changeInX === 0) {
+				rectangleSlope = 9999999;
+			}
+			var rectangleIntercept = ury - rectangleSlope * urx;
+		} else if (ULAngle < entryAngle && entryAngle < URAngle) {
+			// upwards
+			var changeInX = (llx - lrx);
+			var rectangleSlope = (lly - lry) / changeInX;
+			if (changeInX === 0) {
+				rectangleSlope = 9999999;
+			}
+			var rectangleIntercept = lry - rectangleSlope * lrx;
+		}
+		var xIntercept = (rectangleIntercept - bulletYintercept) / (bulletSlope - rectangleSlope);
+		var yIntercept = xIntercept * bulletSlope + bulletYintercept;
+		return [xIntercept, yIntercept];
+		// intercept.x, intercept.y is your point
+	}
+
 	return {
 		Point: Point,
 		render: render,
+		intercept: intercept,
 		parse: parse
 	};
 }());

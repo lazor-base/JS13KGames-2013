@@ -230,7 +230,6 @@ var map = (function() {
 	var mazeH;
 	var field;
 	var frontier;
-	var debugConsole = 1; //set to 1 to print errors to console. Requires chrome or firebug
 
 	var shuffle = function(o) { //v1.0
 		for (var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);

@@ -43,17 +43,17 @@ var weapons = (function() {
 		flame: {
 			damage: 0.1,
 			distance: 250,
-			speed: 80,
+			speed: 100,
 			width: 1,
 			height: 1,
 			shells: 1,
-			reload: 250,
+			reload: 100,
 			color: "red",
 			frameModifier: function(bullet) {
 				var percent = (bullet.currentDistance / bullet.distance);
 				bullet.speed = bullet.speed + (25 * (percent * 10) - 10);
-				bullet.width = Math.abs(weapons.flame.width * (percent * 10));
-				bullet.height = Math.abs(weapons.flame.height * (percent * 10));
+				bullet.width = Math.abs(weapons.flame.width * (percent * 20));
+				bullet.height = Math.abs(weapons.flame.height * (percent * 20));
 				bullet.damage = bullet.damage - percent / 8
 			},
 			collide: function(bullet, tank) {
@@ -65,14 +65,14 @@ var weapons = (function() {
 			}
 		},
 		laser: {
-			damage: 2,
+			damage: 4,
 			distance: 1,
 			speed: 0,
 			duration: 1000,
 			width: 150,
 			height: 3,
 			shells: 1,
-			reload: 1500,
+			reload: 1000,
 			color: "blue",
 			frameModifier: function(bullet) {
 				bullet.angle = bullet.source.turretAngle;
@@ -157,6 +157,9 @@ var weapons = (function() {
 	function changeWeapon() {
 		tanks.forEach(function(tank, index, tankList) {
 			var weapon = randomWeapon();
+			while (weapon === tank.weaponName) {
+				weapon = randomWeapon();
+			}
 			var command = commands.newCommand(tank.remoteId, tank.ping, time.now() + 50, "changeWeapon", weapon);
 			messages.newMessage("newCommand", io.sockets, tank.remoteId, tank.ping, time.now() + 50, "changeWeapon", weapon);
 			commands.push(command);

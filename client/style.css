@@ -18,6 +18,11 @@ table {
 	padding:0;
 }
 
+#info {
+	width:500px;
+	word-wrap: break-word;
+}
+
 #spawn {
 	position:absolute;
 	top:35px;

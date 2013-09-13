@@ -101,6 +101,7 @@ io.sockets.on('connection', function(socket) {
 	console.log("player connected");
 	sockets.push(socket);
 	socket.set("socketId", socket.id);
+		socket.set("name", socket.id);
 	socket.set("clientList", []);
 	socket.set("players", 0);
 	socket.set("ping", 30)
@@ -184,7 +185,6 @@ var server = global.server = (function() {
 					socket.get("name", function(err, name) {
 						socket.get("players", function(err, number) {
 							socket.set("players", number + 1);
-							console.log(name)
 							var tank = tanks.create(remoteId, name + " (" + number + ")" || socket.id, ping);
 							tanks.add(tank);
 							messages.newMessage("newPlayer", io.sockets, remoteId, name + " (" + number + ")" || socket.id, ping, tank.x, tank.y, tank.angle, tank.turretAngle, tank.weaponName);
@@ -221,7 +221,7 @@ animationLoop.every(0, effects.processEffects);
 animationLoop.every(0, map.collide);
 animationLoop.every(0, tanks.updateCounter);
 animationLoop.every(50, messages.sendMessages);
-animationLoop.every(5000, weapons.changeWeapon);
+animationLoop.every(10000, weapons.changeWeapon);
 animationLoop.every(10000, score.saveToDisk);
 animationLoop.startLoop();
 // var lastTick = time.micro();

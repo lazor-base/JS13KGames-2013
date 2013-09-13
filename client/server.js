@@ -173,8 +173,8 @@ var server = (function(document) {
 				ui.remove(ui.getRemotePlayer(remoteId));
 			});
 		},
-		replaceTank: function(remoteId, property, value, health, timeStamp, socket) {
-			tanks.replace(remoteId, property, value, health);
+		replaceTank: function(remoteId, property, value, health, score, timeStamp, socket) {
+			tanks.replace(remoteId, property, value, health, score);
 		},
 	};
 	return {

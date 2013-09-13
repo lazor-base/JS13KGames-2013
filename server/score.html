@@ -19,10 +19,8 @@
 			window.location.reload();
 		},60000)
 		score.get(function(data) {
-			console.log(data)
 			var sorted = score.highest(data);
 			var i=1;
-			console.log(sorted)
 			if(sorted.length === 0) {
 
 				document.write("no scores... yet")

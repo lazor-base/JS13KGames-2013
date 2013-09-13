@@ -150,7 +150,6 @@ var game = (function() {
 			motion[-1].timeStamp = time.now();
 			var tank = tanks.getTankById(player.remoteId);
 			if (tank && tank.spawned) {
-				console.log(tank)
 				server.input(motion[-1]);
 			}
 		}

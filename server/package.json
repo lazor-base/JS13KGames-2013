@@ -1,18 +1,34 @@
 {
-  "main": "index.html",
-  "name": "js13kgames server",
-  "description": "demo app of node-webkit",
-  "version": "0.1.0",
-  "keywords": [ "demo", "node-webkit" ],
-  "window": {
-    "title": "js13kgames server",
-    "toolbar": true,
-    "width": 800,
-    "height": 500,
-    "position": "mouse",
-    "min_width": 400,
-    "min_height": 200,
-    "max_width": 800,
-    "max_height": 600
-  }
+	"name": "tanks",
+	"preferGlobal": false,
+	"version": "1.0.0-1",
+	"author": "ArkahnX <ArkahnX@arka-tech.net>",
+	"description": "server for tanks webgame",
+	"contributors": [
+		{
+			"name": "Christopher Hall",
+			"email": "Biomech.ArkahnX@gmail.com"
+		}
+	],
+	"scripts": {
+		"start": "node ./server.js"
+	},
+	"main": "./server.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nodejitsu/http-server.git"
+	},
+	"keywords": [
+		"game",
+		"server",
+		"tanks"
+	],
+	"dependencies": {
+		"socket.io": "*"
+	},
+	"analyze": true,
+	"engines": {
+		"node": ">=0.8.15"
+	},
+	"subdomain": "tanks-server"
 }
