@@ -16,12 +16,27 @@ var commands = (function() {
 			if (command.timeStamp > lastTimeStamp) {
 				execute(command, false, deltaTime);
 			} else {
-				history.push(helper.removeFromArray(commandList, command));
+				history.push(helper.removeFromArray(commandList, command)); // discard outdated commands
 			}
 		});
 	}
 
+	function newCommand(remoteId, ping, timeStamp, action, value) {
+		if (history.length > 0) {
+			var command = helper.removeFromArrayAtIndex(history);
+		} else {
+			var command = {};
+		}
+		command.remoteId = remoteId;
+		command.ping = ping;
+		command.timeStamp = timeStamp;
+		command.action = action;
+		command.value = value;
+		return command;
+	}
+
 	function execute(command, notYetPushed, deltaTime) {
+		// console.log("executing command", command.timeStamp - time.now())
 		if (time.now() >= command.timeStamp) {
 			for (var i = 0; i < executeListeners.length; i++) {
 				lastTimeStamp = command.timeStamp;
@@ -36,7 +51,7 @@ var commands = (function() {
 	}
 
 	function push(command) {
-		if (execute(command, true) === false) {
+		if (execute(command, true, 0) === false) {
 			commandList.push(command);
 			return true;
 		}
@@ -50,6 +65,10 @@ var commands = (function() {
 		forEach: forEach,
 		process: process,
 		onExecute: onExecute,
+		newCommand: newCommand,
+		get length() {
+			return commandList.length;
+		},
 		push: push
 	};
 }());

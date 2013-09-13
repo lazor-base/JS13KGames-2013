@@ -74,6 +74,33 @@ var physics = (function() {
 				context.stroke();
 				context.fill();
 			});
+			effects.forEach(function(effect, index, effectList) {
+				for (var i = 0; i < effect.particles.length; i++) {
+					var particle = effect.particles[i];
+					getSides(particle, particle.angle);
+					context.fillStyle = "black";
+					context.beginPath();
+					context.moveTo(particle.points[0].x + particle.x, particle.points[0].y + particle.y);
+					for (var e = 1; e < particle.points.length; e++) {
+						context.lineTo(particle.points[e].x + particle.x, particle.points[e].y + particle.y);
+					}
+					context.closePath();
+					context.stroke();
+					context.fill();
+				}
+			});
+			map.forEach(function(wall, index, walls) {
+				getSides(wall, wall.angle);
+				context.fillStyle = "black";
+				context.beginPath();
+				context.moveTo(wall.points[0].x + wall.x, wall.points[0].y + wall.y);
+				for (var i = 1; i < wall.points.length; i++) {
+					context.lineTo(wall.points[i].x + wall.x, wall.points[i].y + wall.y);
+				}
+				context.closePath();
+				context.stroke();
+				context.fill();
+			});
 		});
 	}
 
@@ -159,7 +186,7 @@ var physics = (function() {
 					};
 				}
 				if (overlap < 0.000001) {
-					return false;
+					// return false;
 				}
 			}
 		}
@@ -222,15 +249,15 @@ var physics = (function() {
 					};
 				}
 				if (overlap < 0.000001) {
-					return false;
+					// return false;
 				}
 			}
 		}
-		if(overlap === 99999999) {
-			return false;
+		if (overlap === 99999999) {
+			// return false;
 		}
 		return {
-			"overlap": overlap + 0.001,
+			"overlap": overlap,
 			"axis": smallest
 		};
 	}

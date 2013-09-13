@@ -6,29 +6,34 @@ var tanks = (function() {
 	var onHurtListeners = [];
 
 	function add(newPlayers, callback) {
-		for (var i = 0; i < newPlayers.length; i++) {
-			tankList.push(newPlayers[i]);
+		if (Array.isArray(newPlayers)) {
+			for (var i = 0; i < newPlayers.length; i++) {
+				tankList.push(newPlayers[i]);
+				if (typeof callback === "function") {
+					callback(newPlayers[i]);
+				}
+			}
+		} else {
+			tankList.push(newPlayers);
 			if (typeof callback === "function") {
-				callback(newPlayers[i]);
+				callback(newPlayers);
 			}
 		}
 	}
 
-	function replace(newTank) {
-		forEach(function(tank, index, tankList) {
-			if (tank.remoteId === newTank.remoteId) {
-				tankList[index].x = newTank.x;
-				tankList[index].y = newTank.y;
-				tankList[index].angle = newTank.angle;
-				tankList[index].xSpeed = newTank.xSpeed;
-				tankList[index].ySpeed = newTank.ySpeed;
-				tankList[index].turretAccel = newTank.turretAccel;
-				tankList[index].turretAngle = newTank.turretAngle;
-				tankList[index].health = newTank.health;
-				// tankList[index] = newTank;
+	function replace(remoteId, property, value, health, score) {
+		var tank = getTankById(remoteId);
+		tank[property] = value;
+		if (tank.health < health && health === 10) {
+			if (typeof draw !== "undefined") {
+				effects.deathEffect(tank);
 			}
-		});
+		}
+		tank.health = health;
+		tank.currentScore = score;
 	}
+
+
 
 	function onHurt(fn) {
 		onHurtListeners.push(fn);
@@ -38,6 +43,7 @@ var tanks = (function() {
 		for (var i = 0; i < onHurtListeners.length; i++) {
 			onHurtListeners[i](source, target, result);
 		}
+		syncTank(target, 0, "health", target.health);
 	}
 
 	function updateCounter(deltaTime) {
@@ -46,43 +52,119 @@ var tanks = (function() {
 		});
 	}
 
+	function syncTank(tank, commandValue, property, value) {
+		if (commandValue === 0) {
+			messages.newMessage("replaceTank", io.sockets, tank.remoteId, property, value, tank.health, tank.currentScore, time.now());
+			// io.sockets.emit("replaceTank", remoteId, tank.x, tank.y, tank.angle, tank.xSpeed, tank.ySpeed, tank.turretAccel, tank.turretAngle, tank.health, time.now());
+		}
+	}
+
 	function execute(command, deltaTime, remainder) {
 		var tank = getTankById(command.remoteId);
 		tank.ping = command.ping;
 		tank.remainder = remainder;
 		tank.deltaTime = deltaTime;
-		if (typeof command.shoot !== "undefined") {
-			tank.shoot = command.shoot;
+		if (tank.spawned === false && command.action !== "spawn") {
+			return false;
+		}
+		if (command.action === "shoot") {
+			tank.shoot = command.value;
 			if (tank.shoot === 0) { // reset the weapon recycle timer
 				tank.timer = 0;
 			}
 		}
-		if (typeof command.changeWeapon !== "undefined") {
-			tank.weaponType = command.changeWeapon;
+		if (command.action === "changeWeapon") {
+			tank.weaponName = command.value;
 		}
-		if (typeof command.turretLeft !== "undefined") {
-			tank.turretAccel = -Math.abs(command.turretLeft);
+		if (command.action === "turretLeft") {
+			tank.turretAccel = -Math.abs(command.value);
+			syncTank(tank, command.value, "turretAngle", tank.turretAngle);
 		}
-		if (typeof command.turretRight !== "undefined") {
-			tank.turretAccel = Math.abs(command.turretRight);
+		if (command.action === "turretRight") {
+			tank.turretAccel = Math.abs(command.value);
+			syncTank(tank, command.value, "turretAngle", tank.turretAngle);
 		}
-		if (typeof command.left !== "undefined") {
-			tank.xSource = -Math.abs(command.left);
+		if (command.action === "left") {
+			tank.xSource = -Math.abs(command.value);
+			syncTank(tank, command.value, "angle", tank.angle);
 		}
-		if (typeof command.right !== "undefined") {
-			tank.xSource = Math.abs(command.right);
+		if (command.action === "right") {
+			tank.xSource = Math.abs(command.value);
+			syncTank(tank, command.value, "angle", tank.angle);
 		}
-		if (typeof command.accel !== "undefined") {
-			tank.ySource = -Math.abs(command.accel);
+		if (command.action === "accel") {
+			tank.ySource = -Math.abs(command.value);
+			syncTank(tank, command.value, "x", tank.x);
+			syncTank(tank, command.value, "y", tank.y);
 		}
-		if (typeof command.decel !== "undefined") {
-			tank.ySource = Math.abs(command.decel);
+		if (command.action === "spawn") {
+			if ( !! Math.abs(command.value) && tank.spawning === false) {
+				tank.spawning = true;
+				effects.spawnEffect(tank);
+			}
+		}
+		if (command.action === "decel") {
+			tank.ySource = Math.abs(command.value);
+			syncTank(tank, command.value, "x", tank.x);
+			syncTank(tank, command.value, "y", tank.y);
 		}
 	}
 
-	function create(remoteId, socketId, ping) {
-		var weapons = bullets.weaponList;
-		var index = helper.randomFromInterval(0, weapons.length - 1);
+	function death(tank, bullet) {
+		if (tank.health <= 0) {
+			tank = reset(tank, tank.ping);
+			for (var attr in tank) {
+				syncTank(tank, 0, attr, tank[attr]);
+			}
+		}
+	}
+
+	function reset(tank, ping, x, y, angle, turretAngle, weaponName) {
+		if (!x && !y) {
+			var emptyTile = map.emptyTile();
+			var emptyX = emptyTile[0] * 50 + 25;
+			var emptyY = emptyTile[1] * 50 + 25;
+		}
+		tank.x = x || helper.randomFromInterval(emptyX - 10, emptyX + 10);
+		tank.y = y || helper.randomFromInterval(emptyY - 10, emptyY + 10);
+		tank.angle = angle || helper.randomFromInterval(0, 359);
+		tank.turretAngle = turretAngle || helper.randomFromInterval(0, 359);
+		tank.weaponName = weaponName || weapons.randomWeapon();
+		tank.health = tank.fullHealth;
+
+		tank.spawned = false;
+		tank.spawning = false;
+		tank.lastX = tank.x;
+		tank.lastY = tank.y;
+		tank.lastAngle = tank.angle;
+		tank.xSpeed = 0;
+		tank.ySpeed = 0;
+		tank.xSource = 0;
+		tank.ySource = 0;
+		tank.drivePower = 0;
+		tank.turnPower = 0;
+		tank.deltaTime = 0;
+		tank.remainder = 0;
+		tank.previousScore += tank.currentScore;
+		tank.currentScore = 0;
+		tank.deaths++;
+		tank.timer = 0;
+		tank.shoot = 0;
+		tank.lastShot = 0;
+		tank.ping = ping;
+
+		tank.turretAccel = 0;
+		tank.lastUpdate = time.now();
+
+		tank.width = 20;
+		tank.height = 10;
+		if (!tank.points) { // old points are just objects of x and y, and there is no need to replace those
+			tank.points = [];
+		}
+		return tank;
+	}
+
+	function create(remoteId, socketId, ping, x, y, angle, turretAngle, weaponName) {
 		if (usedPlayers.length > 0) {
 			var player = helper.removeFromArrayAtIndex(usedPlayers);
 		} else {
@@ -90,30 +172,13 @@ var tanks = (function() {
 		}
 		player.remoteId = remoteId;
 		player.socketId = socketId;
-		// player.x = helper.randomFromInterval(100, 400);
-		// player.y = helper.randomFromInterval(100, 400);
-		player.x = 100;
-		player.y = 100;
-		player.health = 100;
-		player.angle = 0;
-		player.xSpeed = 0;
-		player.ySpeed = 0;
-		player.xSource = 0;
-		player.ySource = 0;
-		player.drivePower = 0;
-		player.turnPower = 0;
-		player.deltaTime = 0;
-		player.remainder = 0;
-		player.timer = 0;
-		player.shoot = 0;
-		player.lastShot = 0;
-		player.ping = ping;
-		player.turretAngle = 0;
-		player.turretAccel = 0;
-		player.weaponType = weapons[index];
-		player.width = 20;
-		player.height = 10;
-		player.points = [];
+
+		player.fullHealth = 10;
+		player.currentScore = 0;
+		player.previousScore = 0;
+		player.deaths = -1;
+
+		player = reset(player, ping, x, y, angle, turretAngle, weaponName);
 		return player;
 	}
 
@@ -151,8 +216,10 @@ var tanks = (function() {
 
 	function parse(deltaTime) {
 		forEach(function(tank, index, tankList) {
-			processMove(tank, deltaTime);
-			processShoot(tank, deltaTime);
+			if (tank.spawned) {
+				processMove(tank, deltaTime);
+				processShoot(tank, deltaTime);
+			}
 		});
 	}
 
@@ -163,8 +230,8 @@ var tanks = (function() {
 	function processShoot(tank, deltaTime) {
 		if (tank.timer > recycleTime) {
 			if (tank.shoot === 1) {
-				// tank.weaponType = "laser"
-				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponType)) {
+				// tank.weaponName = "laser"
+				if (time.now() - tank.lastShot > bullets.reloadTime(tank.weaponName)) {
 					tank.lastShot = time.now();
 					bullets.create(tank);
 				}
@@ -227,12 +294,23 @@ var tanks = (function() {
 		}
 		tank.xSpeed = (tank.drivePower / 100) * MAX_SPEED * Math.cos(turnAngle * Math.PI / 180);
 		tank.ySpeed = (tank.drivePower / 100) * MAX_SPEED * Math.sin(turnAngle * Math.PI / 180);
-
+		tank.lastAngle = tank.angle;
 		tank.angle = turnAngle;
+		tank.lastX = tank.x;
+		tank.lastY = tank.y;
 		tank.x += tank.xSpeed;
 		tank.y += tank.ySpeed;
-		if (tank.x > 700) {
-
+		if (tank.x > 890) {
+			tank.x = 890;
+		}
+		if (tank.x < 10) {
+			tank.x = 10;
+		}
+		if (tank.y > 590) {
+			tank.y = 590;
+		}
+		if (tank.y < 10) {
+			tank.y = 10;
 		}
 
 		var turretAngle = tank.turretAngle + ((tank.turnPower / 100) + ((tank.turretAccel * 100) / 100)) * MAX_TURN_RATE;
@@ -242,7 +320,11 @@ var tanks = (function() {
 			turretAngle = 360 - turretAngle;
 		}
 		tank.turretAngle = turretAngle;
+		if (lastLog !== tank.angle + tank.x + tank.y) {
+			lastLog = tank.angle + tank.x + tank.y
+		}
 	}
+	var lastLog = 0;
 
 	return {
 		get tankList() {
@@ -261,6 +343,8 @@ var tanks = (function() {
 		replace: replace,
 		forEach: forEach,
 		onHurt: onHurt,
+		syncTank: syncTank,
+		death: death,
 		remove: remove
 	};
 }());

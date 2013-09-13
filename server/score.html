@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>JS13KGames 2013 Scores</title>
+
+	</head>
+	<body>
+		<table>
+		<tr><th>Name</th><th>Score</th></tr>
+		<tr><td id="player1name"></td><td id="player1score"></td></tr>
+		<tr><td id="player2name"></td><td id="player2score"></td></tr>
+		<tr><td id="player3name"></td><td id="player3score"></td></tr>
+		<tr><td id="player4name"></td><td id="player4score"></td></tr>
+		<tr><td id="player5name"></td><td id="player5score"></td></tr>
+		</table>
+		<script src="score.js"></script>
+		<script>
+		setTimeout(function(){
+			window.location.reload();
+		},60000)
+		score.get(function(data) {
+			console.log(data)
+			var sorted = score.highest(data);
+			var i=1;
+			console.log(sorted)
+			if(sorted.length === 0) {
+
+				document.write("no scores... yet")
+			} else {
+				score.listEntries(sorted,function(name,score){
+					if(i<6) {
+						document.getElementById("player"+i+"name").innerText = name;
+						document.getElementById("player"+i+"score").innerText = score;
+					}
+					i++;
+				});
+			}
+		})
+		</script>
+	</body>
+</html>

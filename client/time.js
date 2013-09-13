@@ -14,9 +14,13 @@ var time = (function() {
 			callback();
 		}
 	}
+	function micro() {
+		return window.performance.now();
+	}
 	return {
 		now:now,
 		parse:parse,
+		micro:micro,
 		set serverTime(time) {
 			lastServerTimeSync = window.performance.now();
 			serverTime = time;

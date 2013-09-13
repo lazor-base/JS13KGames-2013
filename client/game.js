@@ -2,12 +2,14 @@ var game = (function() {
 	var motion = {};
 
 	function makeMotionObject(id) {
-		motion[id] = motion[id] || {
-			remoteId: -1,
-			xSpeed: 0,
-			ySpeed: 0,
-			timeStamp: time.now()
-		};
+		if (!motion[id]) {
+			motion[id] = {
+				remoteId: -1,
+				xSpeed: 0,
+				ySpeed: 0,
+				timeStamp: time.now()
+			};
+		}
 	}
 	makeMotionObject(-1);
 	makeMotionObject("old");
@@ -35,22 +37,9 @@ var game = (function() {
 	ui.ready(function() {
 		gamePad.init();
 		connection.init();
-		input.gamepad();
 	});
 
 	server.onReady(function() {
-		// gamePad.listenForChanges(function(gamepad) {
-		// 	makeMotionObject(gamepad.index);
-		// 	movement[gamepad.index].xSpeed = +gamepad.axes[gamePad.AXES.LEFT_HORIZONTAL].toFixed(4);
-		// 	movement[gamepad.index].ySpeed = +gamepad.axes[gamePad.AXES.LEFT_VERTICAL].toFixed(4);
-
-		// 	if (connection.connectedToServer) {
-		// 		var player = connection.findPlayerByGamePadId(gamepad.index);
-		// 		movement[gamepad.index].remoteId = player.remoteId;
-		// 		movement[gamepad.index].timeStamp = time.now();
-		// 		server.input(movement[gamepad.index]);
-		// 	}
-		// });
 		config.init(-1, "keyboard"); // init player 0 keyboard
 		config.init(-2, "mouse"); // init player 0 mouse
 		// bind keylistener and mouse listener to the page
@@ -58,9 +47,16 @@ var game = (function() {
 		document.addEventListener("keyup", controls.keyRelease);
 		document.addEventListener("mousedown", controls.mouseDown);
 		document.addEventListener("mouseup", controls.mouseUp);
-		// document.addEventListener("mousemove", controls.mouseMove);
 		gamePad.listenForChanges(controls.gamepad);
 		controls.onChange(function(localId, action, value, controller) {
+			var remoteId = connection.findPlayerByLocalId(localId).remoteId;
+			var tank = tanks.getTankById(remoteId);
+			if (action === "spawn") {
+				server.send("spawn", value, connection.findPlayerByLocalId(localId).remoteId);
+			}
+			if (tank && tank.spawned === false) {
+				return false;
+			}
 			if (action === "shoot") {
 				server.send("shoot", value, connection.findPlayerByLocalId(localId).remoteId);
 			}
@@ -84,35 +80,11 @@ var game = (function() {
 			}
 		});
 
-		// input.onMouse(function(event) {
-		// 	server.send("shoot")
-		// 	server.click(mouse, connection.findPlayerByLocalId(0).remoteId);
-		// });
-
-		// input.onKeyRelease(function(event) {
-		// 	if (helper.contains(keyCodes, event.keyCode)) {
-		// 		helper.removeFromArray(moveMent, codeName(event.keyCode));
-		// 		handleChange();
-		// 	}
-		// });
-		// input.onKeyPress(function(event) {
-		// 	if (helper.contains(keyCodes, event.keyCode)) {
-		// 		var code = codeName(event.keyCode);
-		// 		if (!helper.contains(moveMent, code)) {
-		// 			moveMent.push(code);
-		// 			handleChange();
-		// 		}
-		// 	}
-		// });
 		commands.onExecute(tanks.execute);
 
 		animationLoop.every(0, function() {
-			// if (input.pause) {
-			// 	moveMent = [];
-			// 	handleChange();
-			// }
 			tanks.forEach(function(tank, index, tankList) {
-				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["x", tank.x, "y", tank.y, "weapon", tank.weaponType, "health", tank.health]);
+				ui.changePlayer(ui.getRemotePlayer(tank.remoteId), ["name", tank.socketId, "ping", tank.ping, "weapon", tank.weaponName, "health", tank.health, "points", tank.currentScore]);
 			});
 		});
 		tanks.onHurt(bullets.collide);
@@ -121,9 +93,13 @@ var game = (function() {
 		animationLoop.every(0, commands.process);
 		animationLoop.every(0, tanks.parse);
 		animationLoop.every(0, bullets.parse);
+		animationLoop.every(0, effects.processEffects);
+		animationLoop.every(0, map.collide);
 		animationLoop.every(0, tanks.updateCounter);
-		// animationLoop.every(0, physics.render);
+		animationLoop.every(50, messages.sendMessages);
 		animationLoop.every(0, drawEntity);
+		animationLoop.every(0, spawnWhenReady);
+		// animationLoop.every(0, physics.render);
 		animationLoop.startLoop();
 	});
 
@@ -172,7 +148,11 @@ var game = (function() {
 			var player = connection.findPlayerByLocalId(0);
 			motion[-1].remoteId = player.remoteId;
 			motion[-1].timeStamp = time.now();
-			server.input(motion[-1]);
+			var tank = tanks.getTankById(player.remoteId);
+			if (tank && tank.spawned) {
+				console.log(tank)
+				server.input(motion[-1]);
+			}
 		}
 	}
 
@@ -185,9 +165,36 @@ var game = (function() {
 		draw.bullet(bullet);
 	}
 
+	function drawEffect(effect, index, effectList) {
+		draw.effect(effect);
+	}
+
+	function spawnWhenReady() {
+		var spawned = true;
+		tanks.forEach(function(tank, index, tankList) {
+			var home = connection.remotePlayerIsLocal(tank.remoteId);
+			if (home) {
+				if (spawned === true) {
+					spawned = tank.spawned;
+				}
+			}
+		});
+		if (spawned) {
+			ui.get("spawn").classList.add("hidden");
+		} else {
+			ui.get("spawn").classList.remove("hidden");
+		}
+	}
+
+	function drawWall(wall, index, walls) {
+		draw.wall(wall);
+	}
+
 	function drawEntity() {
+		map.forEach(drawWall);
 		tanks.forEach(drawTanks);
 		bullets.forEach(drawBullets);
+		effects.forEach(drawEffect);
 		// add bullet code here too
 		// add effects code here
 	}

@@ -1,120 +1,36 @@
 var bullets = (function() {
 	var bulletList = [];
 	var oldBullets = [];
-	var weaponList = ["cannon", "spread", "flame", "laser"];
-	var weapons = {
-		cannon: {
-			damage: 1,
-			distance: 100,
-			speed: 100,
-			width: 5,
-			height: 5,
-			shells: 1,
-			reload: 750,
-			color: "orange",
-			collide: function(bullet, tank) {
-				tank.health -= bullet.damage;
-				destroy(bullet)
-			}
-		},
-		spread: {
-			damage: 1,
-			distance: 100,
-			speed: 100,
-			width: 5,
-			height: 5,
-			shells: 3,
-			reload: 1500,
-			color: "green",
-			directionModifier: function(bullet, weapon, index) {
-				bullet.angle = bullet.angle + (index - Math.floor(weapon.shells / 2)) * 30;
-				return bullet;
-			},
-			collide: function(bullet, tank) {
-				tank.health -= bullet.damage;
-				destroy(bullet)
 
-			}
-		},
-		flame: {
-			damage: 1,
-			distance: 75,
-			speed: 100,
-			width: 1,
-			height: 1,
-			shells: 1,
-			reload: 25,
-			color: "red",
-			frameModifier: function(bullet) {
-				var percent = (bullet.currentDistance / bullet.distance);
-				bullet.speed = bullet.speed + (25 * (percent * 10) - 10);
-				bullet.width = Math.abs(weapons.flame.width * (percent * 10));
-				bullet.height = Math.abs(weapons.flame.height * (percent * 10));
-				bullet.damage = bullet.damage - percent / 8
-			},
-			collide: function(bullet, tank) {
-				tank.health -= bullet.damage;
-				destroy(bullet)
 
-			}
-		},
-		laser: {
-			damage: 1,
-			distance: 1,
-			speed: 0,
-			duration: 400,
-			width: 150,
-			height: 3,
-			shells: 1,
-			reload: 700,
-			color: "blue",
-			frameModifier: function(bullet) {
-				bullet.angle = bullet.source.turretAngle;
-				bullet.x = changeXPosition(bullet.source.x, bullet, bullet.source, bullet.angle);
-				bullet.y = changeYPosition(bullet.source.y, bullet, bullet.source, bullet.angle);
-			},
-			collide: function(bullet, tank, result) {
-				if (bullet.contactTime === 0) {
-					bullet.contactTime = time.now();
-					tank.health -= bullet.damage / bullet.duration;
-				} else {
-					tank.health = tank.health - ((bullet.damage * bullet.deltaTime) / bullet.duration);
-				}
-				var closestTank = (result.axis.x - tank.x) * (result.axis.y - tank.y);
-				// destroy(bullet)
-
-			}
-		}
-	};
 
 	function destroy(bullet) {
 		for (var i = 0; i < bulletList.length; i++) {
 			if (bulletList[i].id === bullet.id) {
-				// console.log("destroying bullet", bulletList[i], bullet.id);
 				helper.removeFromArrayAtIndex(bulletList, i);
 				return true;
 			}
 		}
 	}
 
-	function changeXPosition(xPosition, bullet, tank, angle) {
-		var x = getX(bullet, tank);
-		var y = getY(bullet, tank);
-		return xPosition + (x + y) * Math.cos(angle * (Math.PI / 180));
+	function getDimention(axis, bullet) {
+		if (axis === "x") {
+			var dimention = "width";
+		} else {
+			var dimention = "height";
+		}
+		return (bullet.source[dimention] / 2) + (bullet[dimention] / 2);
 	}
 
-	function changeYPosition(yPosition, bullet, tank, angle) {
-		var x = getX(bullet, tank);
-		var y = getY(bullet, tank);
-		return yPosition + (x + y) * Math.sin(angle * (Math.PI / 180));
-	}
-
-	function getX(bullet, tank) {
-		return (tank.width / 2) + (bullet.width / 2);
-	}
-
-	function getY(bullet, tank) {
-		return (tank.height / 2) + (bullet.height / 2);
+	function changePosition(axis, position, angle, bullet) {
+		var x = getDimention("x", bullet);
+		var y = getDimention("y", bullet);
+		if (axis === "x") {
+			var math = "cos";
+		} else {
+			var math = "sin";
+		}
+		return position + (x + y) * Math[math](angle * (Math.PI / 180));
 	}
 
 	function Bullet(angle, x, y, weapon, tank) {
@@ -131,11 +47,15 @@ var bullets = (function() {
 		bullet.speed = weapon.speed; // how many pixels per second
 		bullet.width = weapon.width;
 		bullet.height = weapon.height;
+		bullet.maxWidth = weapon.width;
+		bullet.maxHeight = weapon.height;
 		bullet.color = weapon.color;
-		bullet.x = changeXPosition(x, bullet, tank, angle);
-		bullet.y = changeYPosition(y, bullet, tank, angle);
+		bullet.x = changePosition("x", x, angle, bullet);
+		bullet.y = changePosition("y", y, angle, bullet);
 		bullet.angle = angle;
 		bullet.collide = weapon.collide;
+		bullet.hurt = weapon.hurt;
+		bullet.noCollide = weapon.noCollide;
 		bullet.contactTime = 0; // used for weapons like the laser where the weapon does damage as it has contact with the player
 		if (weapon.duration) {
 			bullet.duration = weapon.duration;
@@ -144,7 +64,9 @@ var bullets = (function() {
 		bullet.deltaTime = 0;
 		bullet.startTime = time.now();
 		bullet.frameModifier = weapon.frameModifier;
-		bullet.points = [];
+		if (!bullet.points) { // old points are just objects of x and y, and there is no need to replace those
+			bullet.points = [];
+		}
 		return bullet;
 	}
 
@@ -165,7 +87,7 @@ var bullets = (function() {
 	}
 
 	function create(tank) {
-		var weapon = weapons[tank.weaponType];
+		var weapon = weapons.definition(tank.weaponName);
 		for (var i = 0; i < weapon.shells; i++) {
 			var bullet = Bullet(tank.turretAngle, tank.x, tank.y, weapon, tank);
 			if (typeof weapon.directionModifier === "function") {
@@ -192,15 +114,22 @@ var bullets = (function() {
 
 	function processCollision(bullet) {
 		tanks.forEach(function(tank, index, tankList) {
-			var result = physics.parse(bullet, tank);
-			if (result) {
-				tanks.hurt(bullet, tank, result);
+			if (tank.spawned) {
+				var result = physics.parse(bullet, tank);
+				if (result) {
+					tanks.hurt(bullet, tank, result);
+				} else {
+					bullets.noCollide(bullet);
+				}
 			}
 		});
 	}
 
 	function processMove(bullet, deltaTime) {
 		bullet.deltaTime = deltaTime;
+		if (typeof bullet.frameModifier === "function") {
+			bullet.frameModifier(bullet);
+		}
 		var MAX_SPEED = bullet.speed * (deltaTime / 1000);
 		var turnAngle = bullet.angle;
 		var reverse = turnAngle;
@@ -213,11 +142,8 @@ var bullets = (function() {
 		bullet.currentDistance += Math.sqrt((xSpeed * xSpeed) + (ySpeed * ySpeed));
 		bullet.x += xSpeed;
 		bullet.y += ySpeed;
-		if (typeof bullet.frameModifier === "function") {
-			bullet.frameModifier(bullet);
-		}
 		// remove bullet if it goes off screen
-		if (bullet.x > 700 || bullet.x < 0 || bullet.y > 700 || bullet.y < 0 || bullet.currentDistance >= bullet.distance || (bullet.duration && bullet.duration < time.now() - bullet.startTime)) {
+		if (bullet.x > 900 || bullet.x < 0 || bullet.y > 600 || bullet.y < 0 || bullet.currentDistance >= bullet.distance || (bullet.duration && bullet.duration < time.now() - bullet.startTime)) {
 			destroy(bullet);
 		}
 	}
@@ -226,30 +152,40 @@ var bullets = (function() {
 		bulletList
 	}
 
-	function reloadTime(type) {
-		if (weapons[type].duration) {
-			return weapons[type].reload + weapons[type].duration;;
+	function reloadTime(name) {
+		var weapon = weapons.definition(name);
+		if (weapon.duration) {
+			return weapon.reload + weapon.duration;
 		}
-		return weapons[type].reload;
-	}
-
-	function color(type) {
-		return weapons[type].color;
+		return weapon.reload;
 	}
 
 	function collide(bullet, tank, result) {
+		if(typeof draw !== "undefined") {
+			effects.damageEffect(bullet,tank);
+		}
 		bullet.collide(bullet, tank, result);
+	}
+
+	function hurt(bullet, tank, result) {
+		bullet.hurt(bullet, tank, result);
+	}
+
+	function noCollide(bullet) {
+		if (typeof bullet.noCollide === "function") {
+			bullet.noCollide(bullet);
+		}
 	}
 
 	return {
 		reloadTime: reloadTime,
 		create: create,
-		get weaponList() {
-			return weaponList;
-		},
 		collide: collide,
-		color: color,
+		noCollide: noCollide,
 		parse: parse,
+		hurt: hurt,
+		destroy: destroy,
+		changePosition: changePosition,
 		forEach: forEach
 	};
 }());

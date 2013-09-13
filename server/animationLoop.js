@@ -1,4 +1,4 @@
-var animationLoop = (function(window) {
+var animationLoop = (function() {
 	var animationLoop = null;
 	var stop = false;
 	var currentTick = 0;
@@ -7,13 +7,28 @@ var animationLoop = (function(window) {
 	var tickListeners = [];
 	var frameStart = 0;
 	var frameEnd = 0;
+	if (typeof window !== "undefined") {
+		if (window.requestAnimationFrame) {
+			var nextFrame = function(callback) {
+				return window.requestAnimationFrame(callback);
+			};
+		} else {
+			var nextFrame = function(callback) {
+				window.setTimeout(callback, 1000 / 60);
+			};
+		}
+	} else {
+		var nextFrame = function(callback) {
+			setTimeout(callback, 1000 / 60);
+		};
+	}
 
 	function every(numberOfTicks, callback) {
 		function Listener(numberOfTicks, callback) {
 			this.numberOfTicks = numberOfTicks;
 			this.listeners = [callback];
 			this.deltaTime = 0;
-			this.lastTick = window.performance.now();
+			this.lastTick = time.micro();
 			return this;
 		}
 		var index = listenerIds.indexOf(numberOfTicks);
@@ -27,7 +42,7 @@ var animationLoop = (function(window) {
 
 	function startLoop() {
 		lastTick = currentTick;
-		currentTick = window.performance.now();
+		currentTick = time.micro();
 		for (var i = 0; i < tickListeners.length; i++) {
 			var thisListener = tickListeners[i];
 			if (stop) {
@@ -47,7 +62,7 @@ var animationLoop = (function(window) {
 		if (stop) {
 			return true;
 		}
-		animationLoop = window.requestAnimationFrame(startLoop);
+		animationLoop = nextFrame(startLoop);
 	}
 
 	function stopLoop() {
@@ -65,14 +80,14 @@ var animationLoop = (function(window) {
 
 	return {
 		get timeSinceLastFrame() {
-			return currentTick-lastTick;
+			return currentTick - lastTick;
 		},
 		startLoop: startLoop,
 		stopLoop: stopLoop,
 		every: every,
 		removeFromLoop: removeFromLoop
 	};
-}(window));
+}());
 if (typeof module !== "undefined") {
 	module.exports = animationLoop;
 }

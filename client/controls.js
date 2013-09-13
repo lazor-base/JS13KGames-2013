@@ -63,52 +63,54 @@ var controls = (function() {
 			}
 		}
 		var hardwareId = gamepad.index;
-		var tank = tanks.getTankById(connection.findPlayerByGamePadId(hardwareId).remoteId);
-		if (tank) {
-			players[hardwareId] = players[hardwareId] || new Player();
-			for (var i = 0; i < gamepad.buttons.length; i++) {
-				changeKey({}, i, hardwareId, gamepad.buttons[i]);
+		if (gamepad.buttons[gamePad.BUTTONS.START]) {
+			connection.onPlayerStart(hardwareId);
+		} else {
+			var tank = tanks.getTankById(connection.findPlayerByGamePadId(hardwareId).remoteId);
+			if (tank) {
+				players[hardwareId] = players[hardwareId] || new Player();
+				for (var i = 0; i < gamepad.buttons.length; i++) {
+					changeKey({}, i, hardwareId, gamepad.buttons[i]);
+				}
+				players[hardwareId].localId = connection.findPlayerByGamePadId(hardwareId).localId;
+				// for the hardcoded analogue sticks
+				var minimumPercent = 35 / 100;
+				// make all the analogue stick values
+				if (gamepad.axes[0] < 0) {
+					var left_horizontal = Math.ceil(gamepad.axes[0] - minimumPercent);
+				} else {
+					var left_horizontal = Math.floor(gamepad.axes[0] + minimumPercent);
+				}
+				if (gamepad.axes[1] < 0) {
+					var left_vertical = Math.ceil(gamepad.axes[1] - minimumPercent);
+				} else {
+					var left_vertical = Math.floor(gamepad.axes[1] + minimumPercent);
+				}
+				if (gamepad.axes[2] < 0) {
+					var right_horizontal = Math.ceil(gamepad.axes[2] - minimumPercent);
+				} else {
+					var right_horizontal = Math.floor(gamepad.axes[2] + minimumPercent);
+				}
+				if (gamepad.axes[3] < 0) {
+					var right_vertical = Math.ceil(gamepad.axes[3] - minimumPercent);
+				} else {
+					var right_vertical = Math.floor(gamepad.axes[3] + minimumPercent);
+				}
+				different(hardwareId, "left", compare(left_horizontal, -1));
+				different(hardwareId, "right", compare(left_horizontal, 1));
+				different(hardwareId, "accel", compare(left_vertical, -1));
+				different(hardwareId, "decel", compare(left_vertical, 1));
+				different(hardwareId, "turretLeft", compare(right_horizontal, -1));
+				different(hardwareId, "turretRight", compare(right_horizontal, 1));
+				// different(hardwareId, "angle", angle(tank.x + Math.floor(right_horizontal * 1000), tank.y + Math.floor(right_vertical * 1000), tank));
 			}
-			players[hardwareId].localId = connection.findPlayerByGamePadId(hardwareId).localId;
-			// for the hardcoded analogue sticks
-			var minimumPercent = 35 / 100;
-			// make all the analogue stick values
-			if (gamepad.axes[0] < 0) {
-				var left_horizontal = Math.ceil(gamepad.axes[0] - minimumPercent);
-			} else {
-				var left_horizontal = Math.floor(gamepad.axes[0] + minimumPercent);
-			}
-			if (gamepad.axes[1] < 0) {
-				var left_vertical = Math.ceil(gamepad.axes[1] - minimumPercent);
-			} else {
-				var left_vertical = Math.floor(gamepad.axes[1] + minimumPercent);
-			}
-			if (gamepad.axes[2] < 0) {
-				var right_horizontal = Math.ceil(gamepad.axes[2] - minimumPercent);
-			} else {
-				var right_horizontal = Math.floor(gamepad.axes[2] + minimumPercent);
-			}
-			if (gamepad.axes[3] < 0) {
-				var right_vertical = Math.ceil(gamepad.axes[3] - minimumPercent);
-			} else {
-				var right_vertical = Math.floor(gamepad.axes[3] + minimumPercent);
-			}
-			different(hardwareId, "left", compare(left_horizontal, -1));
-			different(hardwareId, "right", compare(left_horizontal, 1));
-			different(hardwareId, "accel", compare(left_vertical, -1));
-			different(hardwareId, "decel", compare(left_vertical, 1));
-			different(hardwareId, "turretLeft", compare(right_horizontal, -1));
-			different(hardwareId, "turretRight", compare(right_horizontal, 1));
-			// different(hardwareId, "angle", angle(tank.x + Math.floor(right_horizontal * 1000), tank.y + Math.floor(right_vertical * 1000), tank));
 		}
 	}
 
 	function changeKey(event, keyCode, hardwareId, value) {
 		var action = config.matchKey(hardwareId, keyCode);
 		if (action !== false) { // only proceed if this key is bound to an action
-			if (typeof event.preventDefault !== "undefined") {
-				event.preventDefault();
-			}
+			input.preventDefault(event);
 			players[hardwareId] = players[hardwareId] || new Player();
 			if (hardwareId < 0) { // a catch for player 0 using keyboard and mouse
 				players[hardwareId].localId = 0;

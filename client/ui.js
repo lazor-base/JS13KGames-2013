@@ -1,5 +1,5 @@
 var ui = (function(window, document) {
-	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span> | X: <span class="x">{{x}}</span> | Y: <span class="y">{{y}}</span> | Weapon: <span class="weapon">{{weapon}}</span> | Health: <span class="health">{{health}}</span></li>';
+	var playerTemplate = '<li data-localId="{{localId}}" data-remoteId="{{remoteId}}">Player ID: <span class="localId">{{localId}}</span> | Controller Id: <span class="controllerId">{{controllerId}}</span> | Remote Id: <span class="remoteId">{{remoteId}}</span> | Ping: <span class="ping">{{ping}}</span> | Name: <span class="name">{{name}}</span> | Weapon: <span class="weapon">{{weapon}}</span> | Health: <span class="health">{{health}}</span> | Points: <span class="points">{{points}}</span></li>';
 
 	function createElement(name) {
 		return document.createElement(name);
@@ -28,7 +28,6 @@ var ui = (function(window, document) {
 	}
 
 	function getRemotePlayer(remoteId) {
-		// console.log(remoteId)
 		return getPlayer(remoteId, "remoteId");
 	}
 
@@ -37,16 +36,16 @@ var ui = (function(window, document) {
 	}
 
 	function addLocalPlayer(localId, controllerId, remoteId, ping) {
-		addPlayer(localId, controllerId, remoteId, ping, "localPlayers");
+		addPlayer(localId, controllerId, remoteId, ping, "canon", 100, "localPlayers");
 	}
 
 	function addRemotePlayer(remoteId, ping) {
-		addPlayer(-1, -1, remoteId, ping, "remotePlayers");
+		addPlayer(-1, -1, remoteId, ping, "canon", 100, "remotePlayers");
 	}
 
-	function addPlayer(localId, controllerId, remoteId, ping, target) {
+	function addPlayer(localId, controllerId, remoteId, ping, weapon, health, target) {
 		var found = false;
-		var result = ["remoteId", remoteId, "ping", ping];
+		var result = ["remoteId", remoteId, "ping", ping, "weapon", weapon, "health", health];
 		if (localId === -1) {
 			found = getRemotePlayer(remoteId);
 		} else {
@@ -60,6 +59,8 @@ var ui = (function(window, document) {
 				localId: localId,
 				controllerId: controllerId,
 				remoteId: remoteId,
+				weapon: weapon,
+				health: health,
 				x: 0,
 				y: 0,
 				ping: ping
@@ -94,7 +95,7 @@ var ui = (function(window, document) {
 				for (var i = 0; i < property.length; i += 2) {
 					handleRemoteId(property[i], property[i + 1]);
 					var element = player.querySelector('span[class="' + property[i] + '"]');
-					if (element.textContent !== property[i + 1]) {
+					if (element && element.textContent !== property[i + 1]) {
 						element.textContent = property[i + 1];
 					}
 				}

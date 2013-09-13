@@ -1,7 +1,7 @@
 var config = (function() {
 	var hardware = {};
 	var types = ["mouse", "keyboard", "gamepad"];
-	var actions = ["shoot", "left", "right", "accel", "decel", "turretLeft", "turretRight"];
+	var actions = ["shoot", "left", "right", "accel", "decel", "turretLeft", "turretRight", "spawn"];
 	var defaults = [
 		[1, 38, 5],
 		[-1, 65, -1],
@@ -10,6 +10,7 @@ var config = (function() {
 		[-1, 83, -1],
 		[0, 37, -1],
 		[2, 39, -1],
+		[-1, 13, 0],
 	];
 
 	function init(hardwareId, type) {

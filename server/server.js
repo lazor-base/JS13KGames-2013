@@ -5,13 +5,55 @@ process.on("uncaughtException", function(err) {
 var url = require('url');
 var path = require('path');
 var app = require('http').createServer(handler);
-var io = require('socket.io').listen(app);
+var io = global.io = require('socket.io').listen(app);
 var fs = require('fs');
+
+var time = global.time = {
+	now: function() {
+		return Date.now()
+	},
+	micro: (function() {
+		var getNanoSeconds, hrtime, loadTime;
+
+		if ((typeof performance !== "undefined" && performance !== null) && performance.now) {
+			return function() {
+				return performance.now();
+			};
+		} else if ((typeof process !== "undefined" && process !== null) && process.hrtime) {
+			hrtime = process.hrtime;
+			getNanoSeconds = function() {
+				var hr;
+				hr = hrtime();
+				return hr[0] * 1e9 + hr[1];
+			};
+			loadTime = getNanoSeconds();
+			return function() {
+				return (getNanoSeconds() - loadTime) / 1e6;
+			};
+		} else if (Date.now) {
+			loadTime = Date.now();
+			return function() {
+				return Date.now() - loadTime;
+			};
+		} else {
+			loadTime = new Date().getTime();
+			return function() {
+				return new Date().getTime() - loadTime;
+			};
+		}
+	}())
+};
+var lastPong = time.now();
 var helper = global.helper = require("./helper.js");
+var messages = global.messages = require("./messages.js");
 var commands = global.commands = require("./commands.js");
 var animationLoop = global.animationLoop = require("./animationLoop.js");
 var physics = global.physics = require("./physics.js");
+var score = global.score = require("./score.js");
+var map = global.map = require("./map.js");
+var weapons = global.weapons = require("./weapons.js");
 var bullets = global.bullets = require("./bullets.js");
+var effects = global.effects = require("./effects.js");
 var tanks = global.tanks = require("./tanks.js");
 
 var mimeTypes = {
@@ -31,7 +73,7 @@ function handler(req, res) {
 	var filename = path.join(process.cwd(), uri);
 	fs.exists(filename, function(exists) {
 		if (!exists) {
-			console.log("not exists: " + filename);
+			console.log("file doesn't exist: " + filename);
 			res.writeHead(404, {
 				'Content-Type': 'text/plain'
 			});
@@ -61,69 +103,40 @@ io.sockets.on('connection', function(socket) {
 	socket.set("socketId", socket.id);
 	socket.set("clientList", []);
 	socket.set("players", 0);
+	socket.set("ping", 30)
+	socket.on("name", function(name) {
+		name.replace(/^[A-Za-z_][A-Za-z\d_]*$/g, '');
+		socket.set("name", name);
+
+	});
 
 	if (tanks.length) {
 		// send all player data to this new player
-		socket.emit("gamePlayers", tanks.tankList, Date.now());
+		messages.newMessage("gamePlayers", socket, tanks.tankList);
+		// socket.emit("gamePlayers", tanks.tankList, time.now());
 	}
-	socket.on("pong", function(timeStamp) {
-		socket.set("ping", Date.now() - timeStamp);
-		tanks.forEach(function(tank, index, tankList) {
-			if (tank.socketId === socket.id) {
-				tank.ping = Date.now() - timeStamp;
-			}
-		});
-	});
-	socket.on("disconnectUser", function(remoteId, timeStamp) {
-		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
-		removePlayerById([remoteId], socket)
-	});
-	socket.on("addUser", function(data, timeStamp) { // adding a user from an already connected local machine.
-		console.log(timeStamp, Date.now() - timeStamp, Date.now())
-		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
-		console.log("adduser");
-		var remoteId = minId;
-		minId = minId + 1; // make sure the relevant number of ids are reserved.
-		data.remoteId = remoteId;
-		socket.emit("userAdded", data, timeStamp);
-		socket.get("players", function(err, number) {
-			socket.set("players", number + 1);
-		});
-		socket.get("clientList", function(err, idList) {
-			idList.push(remoteId);
-			socket.set("clientList", idList);
-			console.log("new player, id", remoteId);
-			socket.get("ping", function(err, ping) {
-				var newPlayerData = tanks.create(remoteId, socket.id, ping);
-				tanks.add([newPlayerData]);
-				console.log(newPlayerData)
-				// broadcast the new players to all players
-				io.sockets.emit("gamePlayers", [newPlayerData], Date.now());
-				console.log("total players", tanks.length)
-			});
-		});
-	});
-	socket.on("input", function(action, value, remoteId, timeStamp) {
-		socket.emit("pong", timeStamp, Date.now() - timeStamp, Date.now());
-		socket.get("ping", function(err, ping) {
-			var command = {
-				remoteId: remoteId,
-				ping: ping,
-				timeStamp: Date.now() + 50,
-			};
-			command[action] = value;
-			io.sockets.emit("newCommand", command, Date.now());
-			io.sockets.emit("replaceTank", tanks.getTankById(command.remoteId), Date.now());
-			commands.push(command);
-		});
+	map.syncMap(socket);
+
+	socket.on("message", function(messageList, sendTime) {
+		messages.parse(messageList, sendTime, socket);
 	});
 	socket.on("disconnect", function() {
 		onPlayerDisconnect(socket);
 	});
+	socket.on("pong", function(timeStamp) {
+		socket.set("ping", time.now() - timeStamp);
+		tanks.forEach(function(tank, index, tankList) {
+			if (tank.socketId === socket.id) {
+				tank.ping = time.now() - timeStamp;
+			}
+		});
+	});
+
 });
 
 function removePlayerById(playerIds, socket) {
-	io.sockets.emit("disconnects", playerIds, Date.now());
+	messages.newMessage("disconnects", io.sockets, playerIds, time.now());
+	// io.sockets.emit("disconnects", playerIds, time.now());
 	tanks.remove(playerIds, function(remoteId) {
 		socket.get("clientList", function(err, idList) {
 			if (idList && idList.length) {
@@ -140,37 +153,79 @@ function onPlayerDisconnect(socket) {
 	socket.get("clientList", function(err, playerIds) {
 		removePlayerById(playerIds, socket);
 		socket.get("socketId", function(err, index) {
+
 			helper.removeFromArrayAtIndex(sockets, index);
 		});
 	});
 }
 
-var time = global.time = {
-	now: function() {
-		return Date.now()
+var server = global.server = (function() {
+	function handle(name, data, sendTime, socket) {
+		data.push(sendTime, socket);
+		if (time.now() - lastPong >= 50) {
+			lastPong = time.now();
+			socket.emit("pong", sendTime, time.now() - sendTime, time.now());
+		}
+		messages.use(fns[name], data);
 	}
-};
+	var fns = {
+		disconnectUser: function(remoteId, timeStamp, socket) {
+			removePlayerById([remoteId], socket);
+		},
+		addUser: function(localId, timeStamp, socket) {
+			var remoteId = minId;
+			minId = minId + 1; // make sure the relevant number of ids are reserved.
+			messages.newMessage("userAdded", socket, localId, remoteId);
+			socket.get("clientList", function(err, idList) {
+				idList.push(remoteId);
+				socket.set("clientList", idList);
+				console.log("new player, id", remoteId);
+				socket.get("ping", function(err, ping) {
+					socket.get("name", function(err, name) {
+						socket.get("players", function(err, number) {
+							socket.set("players", number + 1);
+							console.log(name)
+							var tank = tanks.create(remoteId, name + " (" + number + ")" || socket.id, ping);
+							tanks.add(tank);
+							messages.newMessage("newPlayer", io.sockets, remoteId, name + " (" + number + ")" || socket.id, ping, tank.x, tank.y, tank.angle, tank.turretAngle, tank.weaponName);
+							console.log("total players", tanks.length)
+						});
+					});
+				});
+			});
+		},
+		input: function(action, value, remoteId, timeStamp, socket) {
+			socket.get("ping", function(err, ping) {
+				var command = commands.newCommand(remoteId, ping, time.now() + 50, action, value);
+				messages.newMessage("newCommand", io.sockets, remoteId, ping, time.now() + 50, action, value);
+				commands.push(command);
+				messages.sendNow();
+			});
+		}
+	};
+	return {
+		handle: handle
+	};
+}());
 
-function changeWeapon() {
-	tanks.forEach(function(tank, index, tankList) {
-		var weapons = bullets.weaponList;
-		var index = helper.randomFromInterval(0, weapons.length - 1);
-		tank.weaponType = weapons[index];
-		var command = {
-			remoteId: tank.remoteId,
-			timeStamp: Date.now() + 50,
-		};
-		command["changeWeapon"] = weapons[index];
-		io.sockets.emit("newCommand", command, Date.now());
-		commands.push(command);
-	});
-}
-
+map.init();
+score.loadFromDisk();
+tanks.onHurt(score.modifyScore);
+tanks.onHurt(bullets.hurt);
 tanks.onHurt(bullets.collide);
 commands.onExecute(tanks.execute);
 animationLoop.every(0, commands.process);
 animationLoop.every(0, tanks.parse);
 animationLoop.every(0, bullets.parse);
+animationLoop.every(0, effects.processEffects);
+animationLoop.every(0, map.collide);
 animationLoop.every(0, tanks.updateCounter);
-animationLoop.every(5000, changeWeapon);
+animationLoop.every(50, messages.sendMessages);
+animationLoop.every(5000, weapons.changeWeapon);
+animationLoop.every(10000, score.saveToDisk);
 animationLoop.startLoop();
+// var lastTick = time.micro();
+
+// 	function processGame() {
+// 		commands.process(currentTick - thisListener.lastTick)
+// 	}

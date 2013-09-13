@@ -2,7 +2,6 @@ var connection = (function() {
 	var unusedPlayerId = 0;
 	var totalControllers = 0;
 	var activePlayers = [];
-	var serverPlayers = [];
 	var connectedToServer = false;
 	var playerOneUsingGamepad = false;
 	var usedPlayers = [];
@@ -11,7 +10,7 @@ var connection = (function() {
 
 	function compare(a, b) {
 		return a.filter(function(i) {
-			return !helper.contains(b, i);
+			return b.indexOf(i) === -1;
 		});
 	}
 
